@@ -85,16 +85,18 @@ class ArchiveScreen extends ConsumerWidget {
               itemCount: sermons.length,
               itemBuilder: (context, index) {
                 final sermon = sermons[index];
-                return _ArchivedCard(
-                  sermon: sermon,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      AppRoutes.slideFromRight(
-                        EditorScreen(sermonId: sermon.id!),
-                      ),
-                    );
-                  },
-                  onRestore: () => _restore(context, ref, sermon),
+                return RepaintBoundary(
+                  child: _ArchivedCard(
+                    sermon: sermon,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        AppRoutes.slideFromRight(
+                          EditorScreen(sermonId: sermon.id!),
+                        ),
+                      );
+                    },
+                    onRestore: () => _restore(context, ref, sermon),
+                  ),
                 );
               },
             );
@@ -197,11 +199,16 @@ class _ArchivedCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(AppIcons.restore),
-                  color: tokens.delivered,
-                  tooltip: AppStrings.restore,
-                  onPressed: onRestore,
+                Tooltip(
+                  message: AppStrings.restore,
+                  child: IconTap(
+                    onTap: onRestore,
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(AppIcons.restore, color: tokens.delivered),
+                    ),
+                  ),
                 ),
               ],
             ),

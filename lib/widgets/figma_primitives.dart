@@ -72,7 +72,7 @@ class _LaunchFadeState extends State<LaunchFade> {
 class AppRoutesDuration {
   const AppRoutesDuration._();
 
-  static const value = Duration(milliseconds: 300);
+  static const value = Duration(milliseconds: 220);
 }
 
 class FrostedGlass extends StatelessWidget {
@@ -95,23 +95,50 @@ class FrostedGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final route = ModalRoute.of(context);
+    final primaryAnimation = route?.animation;
+    final transitionRoute = route is TransitionRoute<dynamic> ? route : null;
+    final secondaryAnimation = transitionRoute?.secondaryAnimation;
+    final listeners = <Listenable>[?primaryAnimation, ?secondaryAnimation];
+    if (listeners.isEmpty) {
+      return _buildGlass(sigma);
+    }
+    return AnimatedBuilder(
+      animation: Listenable.merge(listeners),
+      builder: (context, _) {
+        final routeIsAnimating =
+            (primaryAnimation != null &&
+                primaryAnimation.status != AnimationStatus.completed) ||
+            (secondaryAnimation != null && secondaryAnimation.value > 0.001);
+        return _buildGlass(routeIsAnimating ? 0 : sigma);
+      },
+    );
+  }
+
+  Widget _buildGlass(double effectiveSigma) {
+    final content = Container(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: borderColor ?? Colors.white.withValues(alpha: 0.3),
+        ),
+        boxShadow: boxShadow,
+      ),
+      child: child,
+    );
     return RepaintBoundary(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-          child: Container(
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(
-                color: borderColor ?? Colors.white.withValues(alpha: 0.3),
+        child: effectiveSigma <= 0
+            ? content
+            : BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: effectiveSigma,
+                  sigmaY: effectiveSigma,
+                ),
+                child: content,
               ),
-              boxShadow: boxShadow,
-            ),
-            child: child,
-          ),
-        ),
       ),
     );
   }
@@ -208,6 +235,87 @@ class _SpringTapState extends State<SpringTap>
   }
 }
 
+class IconTap extends StatefulWidget {
+  const IconTap({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.borderRadius = AppRadii.pill,
+  });
+
+  static const double pressedScale = 0.82;
+  static const opacityPulseDuration = Duration(milliseconds: 180);
+  static const spring = SpringDescription(mass: 1, stiffness: 500, damping: 22);
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final double borderRadius;
+
+  @override
+  State<IconTap> createState() => _IconTapState();
+}
+
+class _IconTapState extends State<IconTap> with TickerProviderStateMixin {
+  late final AnimationController _scaleController;
+  late final AnimationController _opacityController;
+  late final Animation<double> _opacity;
+
+  bool get _enabled => widget.onTap != null || widget.onLongPress != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController.unbounded(vsync: this, value: 1);
+    _opacityController = AnimationController(
+      vsync: this,
+      duration: IconTap.opacityPulseDuration,
+    );
+    _opacity = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 1, end: 0.6), weight: 1),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.6, end: 1), weight: 1),
+    ]).animate(_opacityController);
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _opacityController.dispose();
+    super.dispose();
+  }
+
+  void _animateScale(double target) {
+    _scaleController.animateWith(
+      SpringSimulation(IconTap.spring, _scaleController.value, target, 0),
+    );
+  }
+
+  void _pressDown(TapDownDetails _) {
+    _animateScale(IconTap.pressedScale);
+    _opacityController.forward(from: 0);
+  }
+
+  void _pressUp([Object? _]) => _animateScale(1);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: _enabled ? _pressDown : null,
+      onTapUp: _enabled ? _pressUp : null,
+      onTapCancel: _enabled ? _pressUp : null,
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      onLongPressEnd: _enabled ? _pressUp : null,
+      child: ScaleTransition(
+        scale: _scaleController,
+        child: FadeTransition(opacity: _opacity, child: widget.child),
+      ),
+    );
+  }
+}
+
 class PillIconButton extends StatelessWidget {
   const PillIconButton({
     super.key,
@@ -227,7 +335,7 @@ class PillIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    final button = SpringTap(
+    final button = IconTap(
       onTap: onPressed,
       borderRadius: AppRadii.pill,
       child: Container(

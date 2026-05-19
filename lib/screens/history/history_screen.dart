@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/sermon_providers.dart';
 import '../../theme/app_icons.dart';
+import '../../widgets/figma_primitives.dart';
 
 class HistoryScreen extends ConsumerWidget {
   final int sermonId;
@@ -19,8 +20,8 @@ class HistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(AppIcons.back),
+        leading: PillIconButton(
+          icon: AppIcons.back,
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(AppStrings.historyTitle),

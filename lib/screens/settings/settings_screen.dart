@@ -63,7 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         itemCount: 9,
         itemBuilder: (context, index) {
-          return switch (index) {
+          final item = switch (index) {
             0 => _SectionHeading(label: AppStrings.appearance),
             1 => const SizedBox(height: 8),
             2 => SectionCard(
@@ -177,6 +177,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           };
+          return RepaintBoundary(child: item);
         },
       ),
     );

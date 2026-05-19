@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/app_page_transitions.dart';
+
 @immutable
 class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
   const AppThemeTokens({
@@ -200,7 +202,7 @@ class AppTheme {
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFF3EEFF), Color(0xFFFFF4EC), Color(0xFFFDFBFF)],
+      colors: [Color(0xFFF0EAFF), Color(0xFFE8F4FF), Color(0xFFFFF8F0)],
       stops: [0, 0.55, 1],
     ),
   );
@@ -292,6 +294,15 @@ class AppTheme {
       scaffoldBackgroundColor: Colors.transparent,
       fontFamily: 'Inter',
       fontFamilyFallback: const ['Helvetica'],
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: AppCupertinoPageTransitionsBuilder(),
+        },
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: true,
         backgroundColor: Colors.transparent,

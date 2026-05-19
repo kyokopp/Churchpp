@@ -9,6 +9,7 @@ import '../../providers/sermon_providers.dart';
 import '../../providers/settings_providers.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/figma_primitives.dart';
 
 class PulpitScreen extends ConsumerStatefulWidget {
   final int sermonId;
@@ -151,7 +152,7 @@ class _PulpitScreenState extends ConsumerState<PulpitScreen> {
             left: 0,
             right: 0,
             child: Center(
-              child: GestureDetector(
+              child: IconTap(
                 onTap: _exitPulpitMode,
                 child: Container(
                   padding: const EdgeInsets.symmetric(

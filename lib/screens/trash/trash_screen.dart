@@ -10,6 +10,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/app_routes.dart';
 import '../../utils/snackbar_helper.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/figma_primitives.dart';
 
 class TrashScreen extends ConsumerStatefulWidget {
   const TrashScreen({super.key});
@@ -59,9 +60,8 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
       child: Scaffold(
         extendBody: true,
         appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(_selectionMode ? AppIcons.close : AppIcons.back),
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          leading: PillIconButton(
+            icon: _selectionMode ? AppIcons.close : AppIcons.back,
             onPressed: _selectionMode
                 ? _exitSelectionMode
                 : () => Navigator.of(context).pop(),
@@ -78,13 +78,9 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
                       onPressed: () => _selectAll(sermons),
                       child: const Text(AppStrings.selectAll),
                     )
-                  : IconButton(
-                      icon: const Icon(AppIcons.delete),
+                  : PillIconButton(
+                      icon: AppIcons.delete,
                       tooltip: AppStrings.emptyTrash,
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
-                      ),
                       onPressed: () => _confirmEmptyTrash(context, ref),
                     ),
               orElse: () => const SizedBox.shrink(),
@@ -139,16 +135,18 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
                 itemBuilder: (context, index) {
                   final sermon = sermons[index];
                   final selected = _selectedIds.contains(sermon.id);
-                  return _TrashCard(
-                    sermon: sermon,
-                    selected: selected,
-                    dimmed: _selectionMode && !selected,
-                    selectionMode: _selectionMode,
-                    onTap: () =>
-                        _selectionMode ? _toggleSelection(sermon) : null,
-                    onLongPress: () => _toggleSelection(sermon),
-                    onRestore: () => _restoreOne(context, sermon),
-                    onDelete: () => _confirmDelete(context, sermon),
+                  return RepaintBoundary(
+                    child: _TrashCard(
+                      sermon: sermon,
+                      selected: selected,
+                      dimmed: _selectionMode && !selected,
+                      selectionMode: _selectionMode,
+                      onTap: () =>
+                          _selectionMode ? _toggleSelection(sermon) : null,
+                      onLongPress: () => _toggleSelection(sermon),
+                      onRestore: () => _restoreOne(context, sermon),
+                      onDelete: () => _confirmDelete(context, sermon),
+                    ),
                   );
                 },
               );
@@ -392,15 +390,19 @@ class _TrashCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(AppIcons.delete),
-                        color: colorScheme.error,
-                        tooltip: AppStrings.deletePermanently,
-                        constraints: const BoxConstraints(
-                          minWidth: 48,
-                          minHeight: 48,
+                      Tooltip(
+                        message: AppStrings.deletePermanently,
+                        child: IconTap(
+                          onTap: onDelete,
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Icon(
+                              AppIcons.delete,
+                              color: colorScheme.error,
+                            ),
+                          ),
                         ),
-                        onPressed: onDelete,
                       ),
                     ],
                   ),

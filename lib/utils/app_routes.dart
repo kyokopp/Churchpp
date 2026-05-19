@@ -1,71 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 
+import 'app_page_transitions.dart';
 import '../widgets/figma_primitives.dart';
+
+export 'app_page_transitions.dart';
 
 class AppRoutes {
   const AppRoutes._();
 
-  static const duration = Duration(milliseconds: 300);
+  static const duration = AppPageTransitionTiming.duration;
   static const springCurve = AppSpring.curve;
 
+  static AppCupertinoPage<T> cupertinoPage<T>({
+    required Widget child,
+    LocalKey? key,
+    String? name,
+    Object? arguments,
+    String? restorationId,
+    bool fullscreenDialog = false,
+    bool maintainState = true,
+  }) {
+    return AppCupertinoPage<T>(
+      key: key,
+      name: name,
+      arguments: arguments,
+      restorationId: restorationId,
+      fullscreenDialog: fullscreenDialog,
+      maintainState: maintainState,
+      child: child,
+    );
+  }
+
   static Route<T> slideFromRight<T>(Widget page) {
-    return CupertinoPageRoute<T>(builder: (_) => page);
+    return AppCupertinoPageRoute<T>(builder: (_) => page);
   }
 
   static Route<T> slideFromBottom<T>(Widget page) {
-    return PageRouteBuilder<T>(
-      transitionDuration: duration,
-      reverseTransitionDuration: duration,
-      pageBuilder: (_, _, _) => page,
-      transitionsBuilder: (_, animation, secondaryAnimation, child) {
-        final incoming = CurvedAnimation(
-          parent: animation,
-          curve: springCurve,
-          reverseCurve: springCurve,
-        );
-        final outgoing = CurvedAnimation(
-          parent: secondaryAnimation,
-          curve: springCurve,
-          reverseCurve: springCurve,
-        );
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: Offset.zero,
-            end: const Offset(0, -0.12),
-          ).animate(outgoing),
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(incoming),
-            child: child,
-          ),
-        );
-      },
-    );
+    return AppCupertinoPageRoute<T>(builder: (_) => page);
   }
 
   static Route<T> fade<T>(Widget page) {
-    return PageRouteBuilder<T>(
-      transitionDuration: duration,
-      reverseTransitionDuration: duration,
-      pageBuilder: (_, _, _) => page,
-      transitionsBuilder: (_, animation, _, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: springCurve,
-          reverseCurve: springCurve,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.95, end: 1).animate(curved),
-            child: child,
-          ),
-        );
-      },
-    );
+    return AppCupertinoPageRoute<T>(builder: (_) => page);
   }
 
   static Future<T?> showSpringDialog<T>({

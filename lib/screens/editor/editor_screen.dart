@@ -534,16 +534,20 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
     await _saveSermon();
     if (!mounted) return;
 
-    if (_sermon != null) {
-      final repo = await ref.read(sermonRepositoryProvider.future);
-      await repo.logDelivery(_sermon!);
-      if (!mounted) return;
-      if (_status == SermonStatus.ready) {
-        setState(() => _status = SermonStatus.delivered);
-      }
-    }
-
     if (!mounted) return;
+    final sermon = _sermon;
+    final shouldMarkDelivered = _status == SermonStatus.ready;
+    if (sermon != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future<void>.delayed(AppRoutes.duration, () async {
+          if (!mounted) return;
+          final repo = await ref.read(sermonRepositoryProvider.future);
+          await repo.logDelivery(sermon);
+          if (!mounted || !shouldMarkDelivered) return;
+          setState(() => _status = SermonStatus.delivered);
+        });
+      });
+    }
     await Navigator.of(
       context,
     ).push(AppRoutes.fade(PulpitScreen(sermonId: _sermon!.id!)));
@@ -591,9 +595,16 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
     final dateFormat = DateFormat("d 'de' MMMM 'de' yyyy", 'pt_BR');
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
+        if (didPop) {
+          _saveDebouncer.cancel();
+          if (_isNewDraft) {
+            unawaited(_flushNewDraftIfNeeded());
+          } else {
+            unawaited(_saveExistingNow());
+          }
+        } else {
           unawaited(_handleClose());
         }
       },
@@ -862,13 +873,15 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.page,
                     ),
-                    child: QuillEditor.basic(
-                      controller: _quillController,
-                      config: const QuillEditorConfig(
-                        scrollable: true,
-                        expands: true,
-                        placeholder: AppStrings.editorPlaceholder,
-                        padding: EdgeInsets.only(bottom: 40),
+                    child: RepaintBoundary(
+                      child: QuillEditor.basic(
+                        controller: _quillController,
+                        config: const QuillEditorConfig(
+                          scrollable: true,
+                          expands: true,
+                          placeholder: AppStrings.editorPlaceholder,
+                          padding: EdgeInsets.only(bottom: 40),
+                        ),
                       ),
                     ),
                   ),

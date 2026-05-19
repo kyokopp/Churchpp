@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:o_cajado/theme/app_theme.dart';
@@ -36,7 +37,7 @@ void main() {
   test(
     'route motion uses spring-style transitions instead of cubic easing',
     () {
-      expect(AppRoutes.duration, const Duration(milliseconds: 300));
+      expect(AppRoutes.duration, const Duration(milliseconds: 220));
       expect(AppRoutes.springCurve, isNot(Curves.easeInOutCubic));
       expect(AppSpring.stiffness, 400);
       expect(AppSpring.damping, 28);
@@ -44,11 +45,51 @@ void main() {
     },
   );
 
+  test('theme applies Cupertino page transitions on Android', () {
+    final theme = AppTheme.lightTheme();
+
+    expect(
+      theme.pageTransitionsTheme.builders[TargetPlatform.android],
+      isA<AppCupertinoPageTransitionsBuilder>(),
+    );
+  });
+
+  test('app route helpers use Cupertino pages for screen navigation', () {
+    expect(
+      AppRoutes.slideFromRight<void>(const SizedBox.shrink()),
+      isA<AppCupertinoPageRoute<void>>(),
+    );
+    expect(
+      AppRoutes.slideFromBottom<void>(const SizedBox.shrink()),
+      isA<AppCupertinoPageRoute<void>>(),
+    );
+    expect(
+      AppRoutes.fade<void>(const SizedBox.shrink()),
+      isA<AppCupertinoPageRoute<void>>(),
+    );
+    expect(
+      AppRoutes.cupertinoPage<void>(child: const SizedBox.shrink()),
+      isA<AppCupertinoPage<void>>(),
+    );
+  });
+
   test('dark theme and app gradient tokens are available', () {
     final dark = AppTheme.darkTheme();
     expect(dark.brightness, Brightness.dark);
-    expect(AppTheme.gradientFor(Brightness.light).colors.length, 3);
+    expect(AppTheme.gradientFor(Brightness.light).colors, const [
+      Color(0xFFF0EAFF),
+      Color(0xFFE8F4FF),
+      Color(0xFFFFF8F0),
+    ]);
     expect(AppTheme.gradientFor(Brightness.dark).colors.length, 3);
+  });
+
+  test('icon tap micro animation constants are centralized', () {
+    expect(IconTap.pressedScale, 0.82);
+    expect(IconTap.opacityPulseDuration, const Duration(milliseconds: 180));
+    expect(IconTap.spring.stiffness, 500);
+    expect(IconTap.spring.damping, 22);
+    expect(IconTap.spring.mass, 1);
   });
 
   test('Inter is bundled as a local font asset', () {

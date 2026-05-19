@@ -379,17 +379,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       color: tokens.textSecondary,
                     ),
                     suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(AppIcons.close),
-                            constraints: const BoxConstraints(
-                              minWidth: 48,
-                              minHeight: 48,
-                            ),
-                            onPressed: () {
+                        ? IconTap(
+                            onTap: () {
                               _searchController.clear();
                               ref.read(searchQueryProvider.notifier).state = '';
                               setState(() {});
                             },
+                            child: const SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Icon(AppIcons.close),
+                            ),
                           )
                         : null,
                   ),
@@ -559,19 +559,21 @@ class _DashboardPagedList extends StatelessWidget {
         final sermon = result.sermon;
         final selected = selectedIds.contains(sermon.id);
         final dimmed = selectionMode && !selected;
-        final card = showArchived
-            ? _ArchivedSermonCard(sermon: sermon, onTap: () => onTap(sermon))
-            : SermonCard(
-                sermon: sermon,
-                searchMatches: result.matches,
-                selected: selected,
-                dimmed: dimmed,
-                selectionMode: selectionMode,
-                onTap: () => selectionMode ? onSelect(sermon) : onTap(sermon),
-                onArchive: selectionMode ? null : () => onArchive(sermon),
-                onStatusCycle: () => onStatusCycle(sermon),
-                onLongPress: () => onSelect(sermon),
-              );
+        final card = RepaintBoundary(
+          child: showArchived
+              ? _ArchivedSermonCard(sermon: sermon, onTap: () => onTap(sermon))
+              : SermonCard(
+                  sermon: sermon,
+                  searchMatches: result.matches,
+                  selected: selected,
+                  dimmed: dimmed,
+                  selectionMode: selectionMode,
+                  onTap: () => selectionMode ? onSelect(sermon) : onTap(sermon),
+                  onArchive: selectionMode ? null : () => onArchive(sermon),
+                  onStatusCycle: () => onStatusCycle(sermon),
+                  onLongPress: () => onSelect(sermon),
+                ),
+        );
 
         if (!animateFirstPage || resultIndex >= 25 || showArchived) {
           return card;
@@ -954,7 +956,7 @@ class _DockFab extends StatelessWidget {
     final tokens = context.tokens;
     return Expanded(
       child: Center(
-        child: SpringTap(
+        child: IconTap(
           onTap: onTap,
           borderRadius: AppRadii.pill,
           child: Container(
@@ -1000,7 +1002,7 @@ class _BottomAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Expanded(
-      child: SpringTap(
+      child: IconTap(
         onTap: onTap,
         child: SizedBox(
           height: 56,
