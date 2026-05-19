@@ -1,0 +1,51 @@
+name: o_cajado
+description: "O Cajado - aplicativo local-first e offline para gerenciamento de sermoes."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Database (sembast — NoSQL, no codegen, Dart 3.x compatible)
+  sembast: ^3.7.3
+  sembast_sqflite: ^2.2.0+2
+  sqflite: ^2.4.2
+  path_provider: ^2.1.5
+  path: ^1.9.0
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+
+  # Rich Text Editor
+  flutter_quill: ^11.5.0
+
+  # Utilities
+  wakelock_plus: ^1.2.10
+  shared_preferences: ^2.3.4
+  intl: ^0.20.2
+  excel: ^4.0.6
+  file_picker: ^11.0.2
+  lucide_icons: ^0.257.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/bible/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
