@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../animation/motion_constants.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/sermon.dart';
 import '../../providers/sermon_providers.dart';
@@ -642,27 +644,17 @@ class _StaggeredFadeIn extends StatefulWidget {
 class _StaggeredFadeInState extends State<_StaggeredFadeIn>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _opacity;
-  late final Animation<Offset> _offset;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 280),
-    );
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: AppRoutes.springCurve,
-    );
-    _opacity = Tween<double>(begin: 0, end: 1).animate(curved);
-    _offset = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(curved);
+    _controller = AnimationController.unbounded(vsync: this, value: 0);
     Future<void>.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _controller.forward();
+      if (mounted) {
+        _controller.animateWith(
+          SpringSimulation(AppMotion.listSpring, 0, 1, 0),
+        );
+      }
     });
   }
 
@@ -674,9 +666,19 @@ class _StaggeredFadeInState extends State<_StaggeredFadeIn>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacity,
-      child: SlideTransition(position: _offset, child: widget.child),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value.clamp(0.0, 1.0);
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, AppMotion.cardEntranceOffset * (1 - t)),
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
     );
   }
 }
@@ -946,37 +948,81 @@ class _DashboardActionBar extends StatelessWidget {
   }
 }
 
-class _DockFab extends StatelessWidget {
+class _DockFab extends StatefulWidget {
   const _DockFab({required this.onTap});
 
   final VoidCallback onTap;
+
+  @override
+  State<_DockFab> createState() => _DockFabState();
+}
+
+class _DockFabState extends State<_DockFab>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController.unbounded(vsync: this, value: 1);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails _) {
+    _pulse.animateWith(
+      SpringSimulation(AppMotion.snappySpring, _pulse.value, AppMotion.fabPulseMin, 0),
+    );
+  }
+
+  void _onTapUp([Object? _]) {
+    // Overshoot to 1.08 then settle to 1.0
+    _pulse.animateWith(
+      SpringSimulation(
+        const SpringDescription(mass: 1, stiffness: 400, damping: 18),
+        _pulse.value,
+        1.0,
+        // Positive velocity causes overshoot past target
+        3.0,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Expanded(
       child: Center(
-        child: IconTap(
-          onTap: onTap,
-          borderRadius: AppRadii.pill,
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: tokens.primary,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: tokens.primary.withValues(alpha: 0.28),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Icon(
-              AppIcons.plus,
-              color: Theme.of(context).colorScheme.onPrimary,
-              size: 30,
+        child: GestureDetector(
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapUp,
+          onTap: widget.onTap,
+          child: ScaleTransition(
+            scale: _pulse,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: tokens.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: tokens.primary.withValues(alpha: 0.28),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Icon(
+                AppIcons.plus,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 30,
+              ),
             ),
           ),
         ),
@@ -985,7 +1031,7 @@ class _DockFab extends StatelessWidget {
   }
 }
 
-class _BottomAction extends StatelessWidget {
+class _BottomAction extends StatefulWidget {
   const _BottomAction({
     required this.icon,
     required this.label,
@@ -999,45 +1045,86 @@ class _BottomAction extends StatelessWidget {
   final bool selected;
 
   @override
+  State<_BottomAction> createState() => _BottomActionState();
+}
+
+class _BottomActionState extends State<_BottomAction>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _indicator;
+
+  @override
+  void initState() {
+    super.initState();
+    _indicator = AnimationController.unbounded(
+      vsync: this,
+      value: widget.selected ? 1.0 : 0.0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_BottomAction oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) {
+      _indicator.animateWith(
+        SpringSimulation(
+          AppMotion.liquidSpring,
+          _indicator.value,
+          widget.selected ? 1.0 : 0.0,
+          0,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _indicator.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return Expanded(
       child: IconTap(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: SizedBox(
           height: 56,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: AppRoutes.duration,
-                curve: AppRoutes.springCurve,
-                height: 32,
-                constraints: const BoxConstraints(minWidth: 48),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: selected ? tokens.selectedSurface : null,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: selected ? tokens.primary : tokens.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: selected ? tokens.primary : tokens.textSecondary,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
+          child: AnimatedBuilder(
+            animation: _indicator,
+            builder: (context, _) {
+              final t = _indicator.value.clamp(0.0, 1.0);
+              final iconColor =
+                  Color.lerp(tokens.textSecondary, tokens.primary, t)!;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    height: 32,
+                    constraints: const BoxConstraints(minWidth: 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: tokens.selectedSurface.withValues(alpha: t),
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                    ),
+                    child: Icon(widget.icon, size: 20, color: iconColor),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: iconColor,
+                      fontWeight:
+                          t > 0.5 ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

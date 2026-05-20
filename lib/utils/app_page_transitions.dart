@@ -6,6 +6,42 @@ class AppPageTransitionTiming {
   static const duration = Duration(milliseconds: 220);
 }
 
+class AppRouteFade {
+  const AppRouteFade._();
+
+  static double outgoingOpacity(double secondaryValue) {
+    if (secondaryValue <= 0) return 1;
+    if (secondaryValue >= 0.42) return 0;
+    return (1 - (secondaryValue / 0.42)).clamp(0.0, 1.0);
+  }
+
+  static double primaryOpacity(double animationValue) {
+    if (animationValue >= 1) return 1;
+    if (animationValue <= 0) return 0;
+    return (animationValue / 0.28).clamp(0.0, 1.0);
+  }
+
+  static double routeOpacity(
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    final hasCoveringRoute =
+        secondaryAnimation.value > 0 ||
+        secondaryAnimation.status == AnimationStatus.forward ||
+        secondaryAnimation.status == AnimationStatus.reverse;
+    if (hasCoveringRoute) {
+      if (secondaryAnimation.status == AnimationStatus.reverse) {
+        return primaryOpacity(1 - secondaryAnimation.value);
+      }
+      return outgoingOpacity(secondaryAnimation.value);
+    }
+    if (animation.status == AnimationStatus.reverse) {
+      return outgoingOpacity(1 - animation.value);
+    }
+    return primaryOpacity(animation.value);
+  }
+}
+
 class AppCupertinoPageTransitionsBuilder extends PageTransitionsBuilder {
   const AppCupertinoPageTransitionsBuilder();
 
@@ -36,8 +72,10 @@ class AppCupertinoPageTransitionsBuilder extends PageTransitionsBuilder {
       animation: Listenable.merge([animation, secondaryAnimation]),
       child: cupertinoTransition,
       builder: (context, child) {
-        final opacity = (animation.value * (1 - secondaryAnimation.value))
-            .clamp(0.0, 1.0);
+        final opacity = AppRouteFade.routeOpacity(
+          animation,
+          secondaryAnimation,
+        );
         return Opacity(opacity: opacity, child: child);
       },
     );
@@ -53,7 +91,7 @@ class AppCupertinoPageRoute<T> extends PageRoute<T>
     super.requestFocus,
     this.maintainState = true,
     super.fullscreenDialog,
-    super.allowSnapshotting = true,
+    super.allowSnapshotting = false,
     super.barrierDismissible = false,
   });
 
@@ -104,7 +142,7 @@ class AppCupertinoPage<T> extends Page<T> {
     this.maintainState = true,
     this.title,
     this.fullscreenDialog = false,
-    this.allowSnapshotting = true,
+    this.allowSnapshotting = false,
     super.canPop,
     super.onPopInvoked,
     super.key,

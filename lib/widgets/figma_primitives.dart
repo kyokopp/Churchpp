@@ -4,7 +4,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
+import '../animation/motion_constants.dart';
 import '../theme/app_theme.dart';
+
+// ── Spring constants (backward compat + derived curves) ────────────
 
 class AppSpring {
   const AppSpring._();
@@ -13,67 +16,174 @@ class AppSpring {
   static const double damping = 28;
   static const double mass = 1;
 
-  static const description = SpringDescription(
-    mass: mass,
+  static const description = AppMotion.liquidSpring;
+
+  static const Curve curve = SpringTimingCurve(
     stiffness: stiffness,
     damping: damping,
+    mass: mass,
   );
 
-  static const Curve curve = _SpringTimingCurve(
-    stiffness: stiffness,
-    damping: damping,
-    mass: mass,
+  /// Curve derived from [AppMotion.softSpring] for large element entrances.
+  static const Curve softCurve = SpringTimingCurve(
+    stiffness: 200,
+    damping: 22,
+    mass: 1,
+  );
+
+  /// Curve derived from [AppMotion.snappySpring] for micro-interactions.
+  static const Curve snappyCurve = SpringTimingCurve(
+    stiffness: 500,
+    damping: 30,
+    mass: 1,
+  );
+
+  /// Curve derived from [AppMotion.listSpring] for card entrances.
+  static const Curve listCurve = SpringTimingCurve(
+    stiffness: 280,
+    damping: 24,
+    mass: 1,
+  );
+
+  /// Curve derived from [AppMotion.gapSpring] for card removal gap closure.
+  static const Curve gapCurve = SpringTimingCurve(
+    stiffness: 260,
+    damping: 22,
+    mass: 1,
   );
 }
+
+// ── LaunchFade — spring-driven entrance ────────────────────────────
 
 class LaunchFade extends StatefulWidget {
   const LaunchFade({
     super.key,
     required this.child,
     this.delay = Duration.zero,
-    this.offset = const Offset(0, 0.08),
+    this.translateY = AppMotion.launchFadeOffset,
   });
 
   final Widget child;
   final Duration delay;
-  final Offset offset;
+
+  /// Vertical offset in logical pixels (not fractional).
+  final double translateY;
 
   @override
   State<LaunchFade> createState() => _LaunchFadeState();
 }
 
-class _LaunchFadeState extends State<LaunchFade> {
-  bool _visible = false;
+class _LaunchFadeState extends State<LaunchFade>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController.unbounded(vsync: this, value: 0);
     Future<void>.delayed(widget.delay, () {
-      if (mounted) setState(() => _visible = true);
+      if (mounted) {
+        _controller.animateWith(
+          SpringSimulation(AppMotion.softSpring, 0, 1, 0),
+        );
+      }
     });
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnimatedSlide(
-      offset: _visible ? Offset.zero : widget.offset,
-      duration: AppRoutesDuration.value,
-      curve: AppSpring.curve,
-      child: AnimatedOpacity(
-        opacity: _visible ? 1 : 0,
-        duration: AppRoutesDuration.value,
-        curve: AppSpring.curve,
-        child: widget.child,
-      ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value.clamp(0.0, 1.0);
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, widget.translateY * (1 - t)),
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
     );
   }
 }
+
+// ── SpringScaleIn — spring-driven scale entrance ──────────────────
+
+class SpringScaleIn extends StatefulWidget {
+  const SpringScaleIn({
+    super.key,
+    required this.child,
+    this.from = AppMotion.emptyStateFromScale,
+    this.spring = AppMotion.softSpring,
+    this.delay = Duration.zero,
+  });
+
+  final Widget child;
+  final double from;
+  final SpringDescription spring;
+  final Duration delay;
+
+  @override
+  State<SpringScaleIn> createState() => _SpringScaleInState();
+}
+
+class _SpringScaleInState extends State<SpringScaleIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController.unbounded(vsync: this, value: 0);
+    Future<void>.delayed(widget.delay, () {
+      if (mounted) {
+        _controller.animateWith(
+          SpringSimulation(widget.spring, 0, 1, 0),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value.clamp(0.0, 1.0);
+        final scale = widget.from + (1.0 - widget.from) * t;
+        return Opacity(
+          opacity: t,
+          child: Transform.scale(scale: scale, child: child),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+// ── Transition-aware duration constant ─────────────────────────────
 
 class AppRoutesDuration {
   const AppRoutesDuration._();
 
   static const value = Duration(milliseconds: 220);
 }
+
+// ── FrostedGlass — transition-aware backdrop blur ──────────────────
 
 class FrostedGlass extends StatelessWidget {
   const FrostedGlass({
@@ -144,8 +254,10 @@ class FrostedGlass extends StatelessWidget {
   }
 }
 
-class _SpringTimingCurve extends Curve {
-  const _SpringTimingCurve({
+// ── SpringTimingCurve — spring physics as a Curve ──────────────────
+
+class SpringTimingCurve extends Curve {
+  const SpringTimingCurve({
     required this.stiffness,
     required this.damping,
     required this.mass,
@@ -160,7 +272,11 @@ class _SpringTimingCurve extends Curve {
     final normalized = t.clamp(0.0, 1.0);
     final dampingRatio = damping / (2 * math.sqrt(stiffness * mass));
     if (dampingRatio >= 1) {
-      return Curves.easeOut.transform(normalized);
+      // Over-damped: no oscillation, fall back to smooth ease-out.
+      final angularFrequency = math.sqrt(stiffness / mass);
+      final time = normalized * 0.6;
+      return (1 - (1 + angularFrequency * time) *
+          math.exp(-angularFrequency * time)).clamp(0.0, 1.0);
     }
     final angularFrequency = math.sqrt(stiffness / mass);
     final dampedFrequency =
@@ -174,6 +290,8 @@ class _SpringTimingCurve extends Curve {
     return (1 - envelope * oscillation).clamp(0.0, 1.0);
   }
 }
+
+// ── SpringTap — spring-driven press scale for cards/surfaces ───────
 
 class SpringTap extends StatefulWidget {
   const SpringTap({
@@ -213,11 +331,12 @@ class _SpringTapState extends State<SpringTap>
 
   void _animateTo(double target) {
     _controller.animateWith(
-      SpringSimulation(AppSpring.description, _controller.value, target, 0),
+      SpringSimulation(AppMotion.snappySpring, _controller.value, target, 0),
     );
   }
 
-  void _pressDown(TapDownDetails _) => _animateTo(0.97);
+  void _pressDown(TapDownDetails _) =>
+      _animateTo(AppMotion.buttonPressScale); // 0.96
 
   void _pressUp([Object? _]) => _animateTo(1);
 
@@ -235,6 +354,8 @@ class _SpringTapState extends State<SpringTap>
   }
 }
 
+// ── IconTap — spring scale + opacity pulse for icon buttons ────────
+
 class IconTap extends StatefulWidget {
   const IconTap({
     super.key,
@@ -244,9 +365,10 @@ class IconTap extends StatefulWidget {
     this.borderRadius = AppRadii.pill,
   });
 
-  static const double pressedScale = 0.82;
+  static const double pressedScale = AppMotion.iconPressScale; // 0.82
   static const opacityPulseDuration = Duration(milliseconds: 180);
-  static const spring = SpringDescription(mass: 1, stiffness: 500, damping: 22);
+  static const spring =
+      SpringDescription(mass: 1, stiffness: 500, damping: 22);
 
   final Widget child;
   final VoidCallback? onTap;
@@ -316,6 +438,8 @@ class _IconTapState extends State<IconTap> with TickerProviderStateMixin {
   }
 }
 
+// ── PillIconButton — standard icon action button ───────────────────
+
 class PillIconButton extends StatelessWidget {
   const PillIconButton({
     super.key,
@@ -352,6 +476,8 @@ class PillIconButton extends StatelessWidget {
   }
 }
 
+// ── SectionCard — elevated surface container ───────────────────────
+
 class SectionCard extends StatelessWidget {
   const SectionCard({super.key, required this.child});
 
@@ -378,7 +504,9 @@ class SectionCard extends StatelessWidget {
   }
 }
 
-class FigmaStatusChip extends StatelessWidget {
+// ── FigmaStatusChip — spring-driven status indicator ───────────────
+
+class FigmaStatusChip extends StatefulWidget {
   const FigmaStatusChip({
     super.key,
     required this.statusLabel,
@@ -389,28 +517,70 @@ class FigmaStatusChip extends StatelessWidget {
   final Color color;
 
   @override
+  State<FigmaStatusChip> createState() => _FigmaStatusChipState();
+}
+
+class _FigmaStatusChipState extends State<FigmaStatusChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late Color _oldColor;
+  late Color _newColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController.unbounded(vsync: this, value: 1);
+    _oldColor = widget.color;
+    _newColor = widget.color;
+  }
+
+  @override
+  void didUpdateWidget(FigmaStatusChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.color != widget.color) {
+      _oldColor = oldWidget.color;
+      _newColor = widget.color;
+      _controller.animateWith(
+        SpringSimulation(AppMotion.defaultSpring, 0, 1, 0),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 260),
-      curve: AppSpring.curve,
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            spreadRadius: 1,
-            blurRadius: 0,
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = _controller.value.clamp(0.0, 1.0);
+        final color = Color.lerp(_oldColor, _newColor, t) ?? _newColor;
+        return Container(
+          height: 24,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.2),
+                spreadRadius: 1,
+                blurRadius: 0,
+              ),
+            ],
           ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        statusLabel,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
-      ),
+          alignment: Alignment.center,
+          child: Text(
+            widget.statusLabel,
+            style:
+                Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+          ),
+        );
+      },
     );
   }
 }

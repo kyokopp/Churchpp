@@ -1,11 +1,14 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.ocajado.app"
+    namespace = "com.polaris.ocajado"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,11 +22,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ocajado.app"
+        applicationId = "com.polaris.ocajado"
         minSdk = flutter.minSdkVersion
         targetSdk = 35
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 3
+        versionName = "0.1.2"
     }
 
     buildTypes {
@@ -38,4 +41,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
 }

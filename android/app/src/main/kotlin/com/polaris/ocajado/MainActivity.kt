@@ -1,4 +1,4 @@
-package com.ocajado.app
+package com.polaris.ocajado
 
 import io.flutter.embedding.android.FlutterActivity
 

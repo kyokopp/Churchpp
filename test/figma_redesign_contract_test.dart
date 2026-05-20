@@ -54,23 +54,32 @@ void main() {
     );
   });
 
-  test('app route helpers use Cupertino pages for screen navigation', () {
-    expect(
-      AppRoutes.slideFromRight<void>(const SizedBox.shrink()),
-      isA<AppCupertinoPageRoute<void>>(),
-    );
+  test('app route helpers use shared liquid PageRouteBuilder transitions', () {
+    final slideRoute = AppRoutes.slideFromRight<void>(const SizedBox.shrink());
+    expect(slideRoute, isA<PageRouteBuilder<void>>());
+    expect((slideRoute as PageRouteBuilder<void>).allowSnapshotting, false);
     expect(
       AppRoutes.slideFromBottom<void>(const SizedBox.shrink()),
-      isA<AppCupertinoPageRoute<void>>(),
+      isA<PageRouteBuilder<void>>(),
     );
     expect(
       AppRoutes.fade<void>(const SizedBox.shrink()),
-      isA<AppCupertinoPageRoute<void>>(),
+      isA<PageRouteBuilder<void>>(),
     );
     expect(
       AppRoutes.cupertinoPage<void>(child: const SizedBox.shrink()),
       isA<AppCupertinoPage<void>>(),
     );
+  });
+
+  test('route fade removes outgoing content early in the transition', () {
+    expect(AppRouteFade.outgoingOpacity(0), 1);
+    expect(AppRouteFade.outgoingOpacity(0.21), closeTo(0.5, 0.01));
+    expect(AppRouteFade.outgoingOpacity(0.42), 0);
+    expect(AppRouteFade.outgoingOpacity(1), 0);
+    expect(AppRouteFade.primaryOpacity(0), 0);
+    expect(AppRouteFade.primaryOpacity(0.14), closeTo(0.5, 0.01));
+    expect(AppRouteFade.primaryOpacity(0.28), 1);
   });
 
   test('dark theme and app gradient tokens are available', () {

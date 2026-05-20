@@ -32,15 +32,102 @@ class AppRoutes {
   }
 
   static Route<T> slideFromRight<T>(Widget page) {
-    return AppCupertinoPageRoute<T>(builder: (_) => page);
+    return _liquidRoute<T>(
+      page,
+      begin: const Offset(1, 0),
+      parallax: const Offset(-0.28, 0),
+    );
   }
 
   static Route<T> slideFromBottom<T>(Widget page) {
-    return AppCupertinoPageRoute<T>(builder: (_) => page);
+    return _liquidRoute<T>(
+      page,
+      begin: const Offset(0, 1),
+      parallax: const Offset(0, -0.10),
+      overlayMaxOpacity: 0.14,
+    );
   }
 
   static Route<T> fade<T>(Widget page) {
-    return AppCupertinoPageRoute<T>(builder: (_) => page);
+    return _liquidRoute<T>(
+      page,
+      begin: Offset.zero,
+      scaleBegin: 0.96,
+      overlayMaxOpacity: 0,
+    );
+  }
+
+  static Route<T> _liquidRoute<T>(
+    Widget page, {
+    required Offset begin,
+    Offset parallax = Offset.zero,
+    double scaleBegin = 1,
+    double overlayMaxOpacity = 0,
+  }) {
+    return PageRouteBuilder<T>(
+      transitionDuration: duration,
+      reverseTransitionDuration: duration,
+      allowSnapshotting: false,
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final incomingCurved = CurvedAnimation(
+          parent: animation,
+          curve: AppSpring.softCurve,
+          reverseCurve: AppSpring.softCurve,
+        );
+        final incomingSlide = Tween<Offset>(
+          begin: begin,
+          end: Offset.zero,
+        ).animate(incomingCurved);
+        final outgoingSlide = Tween<Offset>(
+          begin: Offset.zero,
+          end: parallax,
+        ).animate(secondaryAnimation);
+
+        return AnimatedBuilder(
+          animation: Listenable.merge([animation, secondaryAnimation]),
+          child: RepaintBoundary(child: child),
+          builder: (context, child) {
+            final overlayOpacity =
+                overlayMaxOpacity *
+                (1 - AppRouteFade.outgoingOpacity(secondaryAnimation.value));
+            final scale =
+                scaleBegin + ((1 - scaleBegin) * incomingCurved.value);
+            final transitionedChild = SlideTransition(
+              position: incomingSlide,
+              child: Transform.scale(
+                scale: scale,
+                child: Opacity(
+                  opacity: AppRouteFade.routeOpacity(
+                    animation,
+                    secondaryAnimation,
+                  ),
+                  child: child,
+                ),
+              ),
+            );
+            if (overlayMaxOpacity <= 0 && parallax == Offset.zero) {
+              return transitionedChild;
+            }
+            return Stack(
+              children: [
+                if (overlayMaxOpacity > 0)
+                  RepaintBoundary(
+                    child: ColoredBox(
+                      color: Color.fromRGBO(0, 0, 0, overlayOpacity),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                SlideTransition(
+                  position: outgoingSlide,
+                  child: transitionedChild,
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   static Future<T?> showSpringDialog<T>({
@@ -64,8 +151,8 @@ class AppRoutes {
       transitionBuilder: (_, animation, _, child) {
         final curved = CurvedAnimation(
           parent: animation,
-          curve: springCurve,
-          reverseCurve: springCurve,
+          curve: AppSpring.softCurve,
+          reverseCurve: AppSpring.softCurve,
         );
         return FadeTransition(
           opacity: curved,

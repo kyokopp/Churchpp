@@ -16,6 +16,7 @@ import '../../utils/debouncer.dart';
 import '../../utils/app_routes.dart';
 import '../../utils/scripture_parser.dart';
 import '../../utils/snackbar_helper.dart';
+import '../../animation/motion_constants.dart';
 import '../../widgets/figma_primitives.dart';
 import '../history/history_screen.dart';
 import '../pulpit/pulpit_screen.dart';
@@ -58,6 +59,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
   Sermon? _sermon;
   bool _isLoaded = false;
   bool _isNewDraft = false;
+  bool _hasAnimatedEntry = false;
   bool _disposed = false;
   bool _isClosing = false;
   bool _titleDuplicate = false;
@@ -102,7 +104,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
         ]).animate(
           CurvedAnimation(
             parent: _saveFeedbackController,
-            curve: AppSpring.curve,
+            curve: AppSpring.snappyCurve,
           ),
         );
 
@@ -111,6 +113,11 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
     } else {
       _loadSermon();
     }
+
+    // Mark entry animation as complete after staggered delays finish.
+    Future<void>.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _hasAnimatedEntry = true);
+    });
   }
 
   /// Initialises an in-memory draft — no DB write until meaningful edits.
@@ -676,165 +683,183 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                         textCapitalization: TextCapitalization.characters,
                       ),
                       const SizedBox(height: 16),
-                      TextField(
-                        controller: _titleController,
-                        focusNode: _titleFocusNode,
-                        style: textTheme.displaySmall?.copyWith(
-                          color: tokens.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: AppStrings.titleHint,
-                          hintStyle: textTheme.displaySmall?.copyWith(
-                            color: tokens.outline,
+                      _wrapLaunchFade(
+                        delay: Duration.zero,
+                        child: TextField(
+                          controller: _titleController,
+                          focusNode: _titleFocusNode,
+                          style: textTheme.displaySmall?.copyWith(
+                            color: tokens.textPrimary,
                           ),
-                          errorText: _titleDuplicate
-                              ? AppStrings.duplicateTitleWarning
-                              : null,
-                          border: _titleDuplicate
-                              ? UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: colorScheme.error,
-                                  ),
-                                )
-                              : InputBorder.none,
-                          filled: false,
-                          contentPadding: EdgeInsets.zero,
+                          decoration: InputDecoration(
+                            hintText: AppStrings.titleHint,
+                            hintStyle: textTheme.displaySmall?.copyWith(
+                              color: tokens.outline,
+                            ),
+                            errorText: _titleDuplicate
+                                ? AppStrings.duplicateTitleWarning
+                                : null,
+                            border: _titleDuplicate
+                                ? UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: colorScheme.error,
+                                    ),
+                                  )
+                                : InputBorder.none,
+                            filled: false,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          maxLines: null,
+                          textCapitalization: TextCapitalization.sentences,
                         ),
-                        maxLines: null,
-                        textCapitalization: TextCapitalization.sentences,
                       ),
                       const SizedBox(height: 8),
-                      RawAutocomplete<String>(
-                        textEditingController: _textoController,
-                        focusNode: _textoFocusNode,
-                        optionsBuilder: (textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
-                            return const Iterable<String>.empty();
-                          }
-                          return _allTextos.where(
-                            (s) => normalizeSearchText(s).contains(
-                              normalizeSearchText(textEditingValue.text),
-                            ),
-                          );
-                        },
-                        fieldViewBuilder:
-                            (context, controller, focusNode, onFieldSubmitted) {
-                              return TextField(
-                                controller: controller,
-                                focusNode: focusNode,
-                                style: textTheme.titleLarge?.copyWith(
-                                  color: tokens.textSecondary,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: AppStrings.textoHint,
-                                  hintStyle: textTheme.titleLarge?.copyWith(
-                                    color: tokens.outline,
-                                  ),
-                                  prefixIcon: Icon(
-                                    AppIcons.book,
-                                    size: 18,
+                      _wrapLaunchFade(
+                        delay: const Duration(milliseconds: 40),
+                        child: RawAutocomplete<String>(
+                          textEditingController: _textoController,
+                          focusNode: _textoFocusNode,
+                          optionsBuilder: (textEditingValue) {
+                            if (textEditingValue.text.isEmpty) {
+                              return const Iterable<String>.empty();
+                            }
+                            return _allTextos.where(
+                              (s) => normalizeSearchText(s).contains(
+                                normalizeSearchText(textEditingValue.text),
+                              ),
+                            );
+                          },
+                          fieldViewBuilder:
+                              (context, controller, focusNode, onFieldSubmitted) {
+                                return TextField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  style: textTheme.titleLarge?.copyWith(
                                     color: tokens.textSecondary,
                                   ),
-                                  border: InputBorder.none,
-                                  filled: false,
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 8,
+                                  decoration: InputDecoration(
+                                    hintText: AppStrings.textoHint,
+                                    hintStyle: textTheme.titleLarge?.copyWith(
+                                      color: tokens.outline,
+                                    ),
+                                    prefixIcon: Icon(
+                                      AppIcons.book,
+                                      size: 18,
+                                      color: tokens.textSecondary,
+                                    ),
+                                    border: InputBorder.none,
+                                    filled: false,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                );
+                              },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4,
+                                borderRadius: BorderRadius.circular(8),
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 180,
+                                  ),
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.zero,
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    itemBuilder: (context, index) {
+                                      final option = options.elementAt(index);
+                                      return ListTile(
+                                        dense: true,
+                                        title: Text(option),
+                                        onTap: () => onSelected(option),
+                                      );
+                                    },
                                   ),
                                 ),
-                                textCapitalization:
-                                    TextCapitalization.sentences,
-                              );
-                            },
-                        optionsViewBuilder: (context, onSelected, options) {
-                          return Align(
-                            alignment: Alignment.topLeft,
-                            child: Material(
-                              elevation: 4,
-                              borderRadius: BorderRadius.circular(8),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 180,
-                                ),
-                                child: ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: options.length,
-                                  itemBuilder: (context, index) {
-                                    final option = options.elementAt(index);
-                                    return ListTile(
-                                      dense: true,
-                                      title: Text(option),
-                                      onTap: () => onSelected(option),
-                                    );
-                                  },
-                                ),
                               ),
-                            ),
-                          );
-                        },
-                        onSelected: (_) => _onContentChanged(),
+                            );
+                          },
+                          onSelected: (_) => _onContentChanged(),
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          SpringTap(
-                            onTap: _cycleStatus,
-                            child: _StatusChipEditor(status: _status),
-                          ),
-                          _EditorPill(
-                            icon: AppIcons.calendar,
-                            label: _scheduledDate == null
-                                ? AppStrings.noDate
-                                : dateFormat.format(_scheduledDate!),
-                            onTap: _pickDate,
-                          ),
-                          ..._tags.map(
-                            (tag) => InputChip(
-                              backgroundColor: tokens.secondarySurface,
-                              shape: const StadiumBorder(),
-                              side: BorderSide.none,
-                              label: Text(tag),
-                              onDeleted: () => _removeTag(tag),
+                      _wrapLaunchFade(
+                        delay: const Duration(milliseconds: 80),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            SpringTap(
+                              onTap: _cycleStatus,
+                              child: _StatusChipEditor(status: _status),
                             ),
-                          ),
-                          SizedBox(
-                            width: 132,
-                            height: 48,
-                            child: TextField(
-                              controller: _tagInputController,
-                              focusNode: _tagFocusNode,
-                              style: textTheme.labelLarge,
-                              decoration: InputDecoration(
-                                hintText: AppStrings.tagHint,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.pill,
-                                  ),
-                                  borderSide: BorderSide(color: tokens.outline),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.pill,
-                                  ),
-                                  borderSide: BorderSide(color: tokens.outline),
-                                ),
-                                filled: false,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                hintStyle: textTheme.labelLarge?.copyWith(
-                                  color: tokens.primary,
-                                ),
+                            _EditorPill(
+                              icon: AppIcons.calendar,
+                              label: _scheduledDate == null
+                                  ? AppStrings.noDate
+                                  : dateFormat.format(_scheduledDate!),
+                              onTap: _pickDate,
+                            ),
+                          ],
+                        ),
+                      ),
+                      _wrapLaunchFade(
+                        delay: const Duration(milliseconds: 120),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ..._tags.map(
+                              (tag) => InputChip(
+                                backgroundColor: tokens.secondarySurface,
+                                shape: const StadiumBorder(),
+                                side: BorderSide.none,
+                                label: Text(tag),
+                                onDeleted: () => _removeTag(tag),
                               ),
-                              onSubmitted: _addTag,
-                              textCapitalization: TextCapitalization.sentences,
                             ),
-                          ),
-                        ],
+                            SizedBox(
+                              width: 132,
+                              height: 48,
+                              child: TextField(
+                                controller: _tagInputController,
+                                focusNode: _tagFocusNode,
+                                style: textTheme.labelLarge,
+                                decoration: InputDecoration(
+                                  hintText: AppStrings.tagHint,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.pill,
+                                    ),
+                                    borderSide: BorderSide(color: tokens.outline),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.pill,
+                                    ),
+                                    borderSide: BorderSide(color: tokens.outline),
+                                  ),
+                                  filled: false,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  hintStyle: textTheme.labelLarge?.copyWith(
+                                    color: tokens.primary,
+                                  ),
+                                ),
+                                onSubmitted: _addTag,
+                                textCapitalization: TextCapitalization.sentences,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       if (_detectedScriptures.isNotEmpty)
@@ -846,18 +871,22 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                             children: _detectedScriptures
                                 .take(5)
                                 .map(
-                                  (scriptureRef) => ActionChip(
-                                    backgroundColor: tokens.selectedSurface,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadii.segmented,
+                                  (scriptureRef) => SpringScaleIn(
+                                    from: 0,
+                                    spring: AppMotion.defaultSpring,
+                                    child: ActionChip(
+                                      backgroundColor: tokens.selectedSurface,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadii.segmented,
+                                        ),
                                       ),
-                                    ),
-                                    avatar: const Icon(AppIcons.book, size: 16),
-                                    label: Text(scriptureRef.displayReference),
-                                    onPressed: () => _showScriptureCard(
-                                      context,
-                                      scriptureRef,
+                                      avatar: const Icon(AppIcons.book, size: 16),
+                                      label: Text(scriptureRef.displayReference),
+                                      onPressed: () => _showScriptureCard(
+                                        context,
+                                        scriptureRef,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -869,18 +898,21 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                 ),
                 // ── Rich text body (scrollable, takes remaining space) ──
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.page,
-                    ),
-                    child: RepaintBoundary(
-                      child: QuillEditor.basic(
-                        controller: _quillController,
-                        config: const QuillEditorConfig(
-                          scrollable: true,
-                          expands: true,
-                          placeholder: AppStrings.editorPlaceholder,
-                          padding: EdgeInsets.only(bottom: 40),
+                  child: _wrapLaunchFade(
+                    delay: const Duration(milliseconds: 160),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.page,
+                      ),
+                      child: RepaintBoundary(
+                        child: QuillEditor.basic(
+                          controller: _quillController,
+                          config: const QuillEditorConfig(
+                            scrollable: true,
+                            expands: true,
+                            placeholder: AppStrings.editorPlaceholder,
+                            padding: EdgeInsets.only(bottom: 40),
+                          ),
                         ),
                       ),
                     ),
@@ -947,6 +979,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
         ),
       ),
     );
+  }
+
+  /// Wraps [child] in a [LaunchFade] only during the initial entry animation.
+  /// Once the staggered entry completes, returns the child directly.
+  Widget _wrapLaunchFade({required Duration delay, required Widget child}) {
+    if (_hasAnimatedEntry) return child;
+    return LaunchFade(delay: delay, child: child);
   }
 }
 
