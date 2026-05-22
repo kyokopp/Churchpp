@@ -203,6 +203,21 @@ class FrostedGlass extends StatelessWidget {
   final Color? borderColor;
   final List<BoxShadow> boxShadow;
 
+  static bool shouldDisableBlur({
+    required AnimationStatus? primaryStatus,
+    required AnimationStatus? secondaryStatus,
+    required double secondaryValue,
+  }) {
+    final primaryActive =
+        primaryStatus == AnimationStatus.forward ||
+        primaryStatus == AnimationStatus.reverse;
+    final secondaryActive =
+        secondaryStatus == AnimationStatus.forward ||
+        secondaryStatus == AnimationStatus.reverse ||
+        secondaryValue > 0.001;
+    return primaryActive || secondaryActive;
+  }
+
   @override
   Widget build(BuildContext context) {
     final route = ModalRoute.of(context);
@@ -216,11 +231,12 @@ class FrostedGlass extends StatelessWidget {
     return AnimatedBuilder(
       animation: Listenable.merge(listeners),
       builder: (context, _) {
-        final routeIsAnimating =
-            (primaryAnimation != null &&
-                primaryAnimation.status != AnimationStatus.completed) ||
-            (secondaryAnimation != null && secondaryAnimation.value > 0.001);
-        return _buildGlass(routeIsAnimating ? 0 : sigma);
+        final disableBlur = shouldDisableBlur(
+          primaryStatus: primaryAnimation?.status,
+          secondaryStatus: secondaryAnimation?.status,
+          secondaryValue: secondaryAnimation?.value ?? 0,
+        );
+        return _buildGlass(disableBlur ? 0 : sigma);
       },
     );
   }

@@ -11,8 +11,8 @@ class AppRouteFade {
 
   static double outgoingOpacity(double secondaryValue) {
     if (secondaryValue <= 0) return 1;
-    if (secondaryValue >= 0.42) return 0;
-    return (1 - (secondaryValue / 0.42)).clamp(0.0, 1.0);
+    if (secondaryValue >= 0.20) return 0;
+    return (1 - (secondaryValue / 0.20)).clamp(0.0, 1.0);
   }
 
   static double primaryOpacity(double animationValue) {
@@ -89,7 +89,7 @@ class AppCupertinoPageRoute<T> extends PageRoute<T>
     this.title,
     super.settings,
     super.requestFocus,
-    this.maintainState = true,
+    this.maintainState = false,
     super.fullscreenDialog,
     super.allowSnapshotting = false,
     super.barrierDismissible = false,
@@ -139,7 +139,7 @@ class AppCupertinoPageRoute<T> extends PageRoute<T>
 class AppCupertinoPage<T> extends Page<T> {
   const AppCupertinoPage({
     required this.child,
-    this.maintainState = true,
+    this.maintainState = false,
     this.title,
     this.fullscreenDialog = false,
     this.allowSnapshotting = false,

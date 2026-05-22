@@ -18,7 +18,7 @@ class AppRoutes {
     Object? arguments,
     String? restorationId,
     bool fullscreenDialog = false,
-    bool maintainState = true,
+    bool maintainState = false,
   }) {
     return AppCupertinoPage<T>(
       key: key,
@@ -68,6 +68,7 @@ class AppRoutes {
       transitionDuration: duration,
       reverseTransitionDuration: duration,
       allowSnapshotting: false,
+      maintainState: false,
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         final incomingCurved = CurvedAnimation(

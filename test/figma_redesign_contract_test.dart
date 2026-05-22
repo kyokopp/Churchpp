@@ -74,12 +74,61 @@ void main() {
 
   test('route fade removes outgoing content early in the transition', () {
     expect(AppRouteFade.outgoingOpacity(0), 1);
-    expect(AppRouteFade.outgoingOpacity(0.21), closeTo(0.5, 0.01));
-    expect(AppRouteFade.outgoingOpacity(0.42), 0);
+    expect(AppRouteFade.outgoingOpacity(0.10), closeTo(0.5, 0.01));
+    expect(AppRouteFade.outgoingOpacity(0.20), 0);
     expect(AppRouteFade.outgoingOpacity(1), 0);
     expect(AppRouteFade.primaryOpacity(0), 0);
     expect(AppRouteFade.primaryOpacity(0.14), closeTo(0.5, 0.01));
     expect(AppRouteFade.primaryOpacity(0.28), 1);
+  });
+
+  test('route helpers release covered screen state after transitions', () {
+    final route =
+        AppRoutes.slideFromRight<void>(const SizedBox.shrink()) as PageRoute<void>;
+    expect(route.maintainState, false);
+  });
+
+  test('frosted glass disables blur during active route animations', () {
+    expect(
+      FrostedGlass.shouldDisableBlur(
+        primaryStatus: AnimationStatus.forward,
+        secondaryStatus: AnimationStatus.dismissed,
+        secondaryValue: 0,
+      ),
+      true,
+    );
+    expect(
+      FrostedGlass.shouldDisableBlur(
+        primaryStatus: AnimationStatus.completed,
+        secondaryStatus: AnimationStatus.forward,
+        secondaryValue: 0,
+      ),
+      true,
+    );
+    expect(
+      FrostedGlass.shouldDisableBlur(
+        primaryStatus: AnimationStatus.completed,
+        secondaryStatus: AnimationStatus.completed,
+        secondaryValue: 1,
+      ),
+      true,
+    );
+    expect(
+      FrostedGlass.shouldDisableBlur(
+        primaryStatus: AnimationStatus.completed,
+        secondaryStatus: AnimationStatus.dismissed,
+        secondaryValue: 0,
+      ),
+      false,
+    );
+  });
+
+  test('editor toolbar keeps Quill controls in dock-style frosted glass', () {
+    final source = File('lib/screens/editor/editor_screen.dart').readAsStringSync();
+    expect(source, contains('FrostedGlass('));
+    expect(source, contains('AppSpacing.floatingDockHeight'));
+    expect(source, contains('QuillSimpleToolbar('));
+    expect(source, isNot(contains('_keyboardController')));
   });
 
   test('dark theme and app gradient tokens are available', () {

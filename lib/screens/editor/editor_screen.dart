@@ -1014,47 +1014,135 @@ class _EditorToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    return Container(
-      height: 64 + bottomInset,
-      decoration: BoxDecoration(color: context.tokens.searchSurface),
-      child: SafeArea(
-        top: false,
-        bottom: true,
-        child: Center(
-          child: SizedBox(
-            width: 342,
-            height: 48,
-            child: QuillSimpleToolbar(
-              controller: controller,
-              config: const QuillSimpleToolbarConfig(
-                multiRowsDisplay: false,
-                showBoldButton: true,
-                showItalicButton: true,
-                showUnderLineButton: true,
-                showColorButton: true,
-                showStrikeThrough: false,
-                showInlineCode: false,
-                showBackgroundColorButton: false,
-                showClearFormat: false,
-                showAlignmentButtons: false,
-                showHeaderStyle: false,
-                showListNumbers: false,
-                showListBullets: false,
-                showListCheck: false,
-                showCodeBlock: false,
-                showQuote: false,
-                showIndent: false,
-                showLink: false,
-                showSearchButton: false,
-                showUndo: false,
-                showRedo: false,
-                showFontSize: false,
-                showFontFamily: false,
-                showDirection: false,
-                showSubscript: false,
-                showSuperscript: false,
-                showSmallButton: false,
-                showDividers: false,
+    final tokens = context.tokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return RepaintBoundary(
+      child: SizedBox(
+        height:
+            AppSpacing.floatingDockHeight +
+            AppSpacing.floatingDockBottomGap +
+            bottomInset,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.floatingDockSideMargin,
+            0,
+            AppSpacing.floatingDockSideMargin,
+            AppSpacing.floatingDockBottomGap + bottomInset,
+          ),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: SizedBox(
+              height: AppSpacing.floatingDockHeight,
+              child: FrostedGlass(
+                borderRadius: 28,
+                sigma: 20,
+                color: isDark
+                    ? tokens.surface.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.6),
+                borderColor: Colors.white.withValues(alpha: 0.3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    offset: const Offset(0, 10),
+                    blurRadius: 15,
+                    spreadRadius: -3,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    offset: const Offset(0, 4),
+                    blurRadius: 6,
+                    spreadRadius: -4,
+                  ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: QuillSimpleToolbar(
+                    controller: controller,
+                    config: QuillSimpleToolbarConfig(
+                      multiRowsDisplay: true,
+                      toolbarIconAlignment: WrapAlignment.center,
+                      toolbarIconCrossAlignment: WrapCrossAlignment.center,
+                      toolbarSectionSpacing: 0,
+                      toolbarRunSpacing: 0,
+                      showBoldButton: true,
+                      showItalicButton: true,
+                      showUnderLineButton: true,
+                      showColorButton: true,
+                      showStrikeThrough: false,
+                      showInlineCode: false,
+                      showBackgroundColorButton: false,
+                      showClearFormat: false,
+                      showAlignmentButtons: false,
+                      showHeaderStyle: false,
+                      showListNumbers: false,
+                      showListBullets: false,
+                      showListCheck: false,
+                      showCodeBlock: false,
+                      showQuote: false,
+                      showIndent: false,
+                      showLink: false,
+                      showSearchButton: false,
+                      showUndo: false,
+                      showRedo: false,
+                      showFontSize: false,
+                      showFontFamily: false,
+                      showDirection: false,
+                      showSubscript: false,
+                      showSuperscript: false,
+                      showSmallButton: false,
+                      showDividers: false,
+                      iconTheme: QuillIconTheme(
+                        iconButtonUnselectedData: IconButtonData(
+                          color: tokens.textSecondary,
+                          iconSize: 20,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 56,
+                          ),
+                          style: IconButton.styleFrom(
+                            shape: const StadiumBorder(),
+                            backgroundColor: Colors.transparent,
+                          ),
+                        ),
+                        iconButtonSelectedData: IconButtonData(
+                          color: tokens.primary,
+                          iconSize: 20,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 56,
+                          ),
+                          style: IconButton.styleFrom(
+                            shape: const StadiumBorder(),
+                            backgroundColor: tokens.primaryTint.withValues(
+                              alpha: 0.10,
+                            ),
+                          ),
+                        ),
+                      ),
+                      buttonOptions: QuillSimpleToolbarButtonOptions(
+                        bold: QuillToolbarToggleStyleButtonOptions(
+                          iconData: AppIcons.bold,
+                          afterButtonPressed: () {},
+                        ),
+                        italic: QuillToolbarToggleStyleButtonOptions(
+                          iconData: AppIcons.italic,
+                          afterButtonPressed: () {},
+                        ),
+                        underLine: QuillToolbarToggleStyleButtonOptions(
+                          iconData: AppIcons.underline,
+                          afterButtonPressed: () {},
+                        ),
+                        color: QuillToolbarColorButtonOptions(
+                          iconData: AppIcons.textColor,
+                          afterButtonPressed: () {},
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
