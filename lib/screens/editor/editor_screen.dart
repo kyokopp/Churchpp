@@ -44,6 +44,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
   late final FocusNode _textoFocusNode;
   late final FocusNode _tagFocusNode;
   late final FocusNode _sermonIdFocusNode;
+  late final FocusNode _bodyFocusNode;
   late QuillController _quillController;
 
   final _saveDebouncer = Debouncer();
@@ -52,6 +53,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
   );
   final _scriptureDebouncer = Debouncer(delay: Duration(milliseconds: 800));
   final _scrollController = ScrollController();
+  final _bodyScrollController = ScrollController();
   late final AnimationController _saveFeedbackController;
   late final Animation<double> _saveFeedbackScale;
   StreamSubscription<dynamic>? _quillChangesSubscription;
@@ -65,6 +67,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
   bool _titleDuplicate = false;
   bool _duplicateSnackVisible = false;
   bool _showSavedCheck = false;
+  bool _hasSaveableContent = false;
   String? _sermonIdError;
   String _lastPersistedTitle = '';
   int _lastValidSermonId = 0;
@@ -90,6 +93,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
     _textoFocusNode = FocusNode();
     _tagFocusNode = FocusNode();
     _sermonIdFocusNode = FocusNode();
+    _bodyFocusNode = FocusNode();
     _sermonIdFocusNode.addListener(_handleSermonIdFocusChange);
     _quillController = QuillController.basic();
     _saveFeedbackController = AnimationController(
@@ -145,6 +149,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
     });
 
     _isLoaded = true;
+    _hasSaveableContent = false;
 
     // Load texto suggestions after the first frame so the editor opens instantly.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -204,6 +209,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
     });
 
     _allTextos = await repo.getAllTextos();
+    _hasSaveableContent = _hasContentToSave;
     if (!mounted) return;
     setState(() => _isLoaded = true);
     _detectScriptures();
@@ -353,10 +359,17 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
   }
 
   void _onContentChanged() {
-    if (mounted) setState(() {});
+    _syncSaveButtonAvailability();
     // For new drafts, don't autosave to DB — only save on close if meaningful.
     if (_isNewDraft) return;
     _saveDebouncer.run(_saveSermon);
+  }
+
+  void _syncSaveButtonAvailability() {
+    if (!mounted) return;
+    final hasContent = _hasContentToSave;
+    if (_hasSaveableContent == hasContent) return;
+    setState(() => _hasSaveableContent = hasContent);
   }
 
   /// Returns the body text without the trailing newline that Quill always adds.
@@ -585,8 +598,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
     _textoFocusNode.dispose();
     _tagFocusNode.dispose();
     _sermonIdFocusNode.dispose();
+    _bodyFocusNode.dispose();
     _quillController.dispose();
     _scrollController.dispose();
+    _bodyScrollController.dispose();
     super.dispose();
   }
 
@@ -631,8 +646,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
               child: PillIconButton(
                 icon: _showSavedCheck ? AppIcons.check : AppIcons.save,
                 tooltip: AppStrings.save,
-                color: _hasContentToSave ? null : tokens.outline,
-                onPressed: _hasContentToSave ? _manualSave : null,
+                color: _hasSaveableContent ? null : tokens.outline,
+                onPressed: _hasSaveableContent ? _manualSave : null,
               ),
             ),
             const SizedBox(width: 8),
@@ -907,6 +922,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                       child: RepaintBoundary(
                         child: QuillEditor.basic(
                           controller: _quillController,
+                          focusNode: _bodyFocusNode,
+                          scrollController: _bodyScrollController,
                           config: const QuillEditorConfig(
                             scrollable: true,
                             expands: true,
