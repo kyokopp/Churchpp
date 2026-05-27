@@ -202,8 +202,8 @@ class AppTheme {
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFF0EAFF), Color(0xFFE8F4FF), Color(0xFFFFF8F0)],
-      stops: [0, 0.55, 1],
+      colors: [Color(0xFFF3EEFF), Color(0xFFFFF4EC), Color(0xFFFDFBFF)],
+      stops: [0, 0.52, 1],
     ),
   );
 
@@ -221,7 +221,7 @@ class AppTheme {
     mutedText: Color(0xFF938F99),
     outline: Color(0xFF938F99),
     border: Color(0xFF49454F),
-    destructive: Color(0xFFFFB4AB),
+    destructive: Color(0xFFFF6B6B),
     ready: Color(0xFFFACC15),
     delivered: Color(0xFF86EFAC),
     gradient: LinearGradient(

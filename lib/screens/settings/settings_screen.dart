@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../animation/motion_constants.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/sermon_providers.dart';
 import '../../providers/settings_providers.dart';
@@ -54,80 +56,106 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         actions: const [SizedBox(width: 72)],
       ),
-      body: ListView.builder(
+      body: ListView(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.page,
           16,
           AppSpacing.page,
           AppSpacing.floatingDockBottomPadding(context),
         ),
-        itemCount: 9,
-        itemBuilder: (context, index) {
-          final item = switch (index) {
-            0 => _SectionHeading(label: AppStrings.appearance),
-            1 => const SizedBox(height: 8),
-            2 => SectionCard(
+        children: [
+          LaunchFade(
+            delay: Duration.zero,
+            translateY: 12,
+            child: _SectionHeading(label: AppStrings.appearance),
+          ),
+          const SizedBox(height: 8),
+          LaunchFade(
+            delay: const Duration(milliseconds: AppMotion.sectionStaggerMs),
+            translateY: 20,
+            child: _SettingsSectionCard(
               child: Column(
                 children: [
-                  _ThemeModeRow(
+                  _LiquidThemeModeRow(
                     title: AppStrings.system,
                     subtitle: AppStrings.followDevice,
                     value: ThemeMode.system,
                     selectedValue: themeMode,
+                    delay: 0,
                   ),
                   const _FigmaDivider(),
-                  _ThemeModeRow(
+                  _LiquidThemeModeRow(
                     title: AppStrings.light,
                     subtitle: AppStrings.lightAlways,
                     value: ThemeMode.light,
                     selectedValue: themeMode,
+                    delay: AppMotion.cardStaggerMs,
                   ),
                   const _FigmaDivider(),
-                  _ThemeModeRow(
+                  _LiquidThemeModeRow(
                     title: AppStrings.dark,
                     subtitle: AppStrings.darkAlways,
                     value: ThemeMode.dark,
                     selectedValue: themeMode,
+                    delay: AppMotion.cardStaggerMs * 2,
                   ),
                   const _FigmaDivider(),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppStrings.fontSize,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: tokens.textPrimary,
-                            fontWeight: FontWeight.w500,
+                  LaunchFade(
+                    delay: const Duration(
+                      milliseconds: AppMotion.cardStaggerMs * 3,
+                    ),
+                    translateY: 10,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppStrings.fontSize,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: tokens.textPrimary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        _FontSizeSegmentedControl(value: fontSize),
-                        const SizedBox(height: 16),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: tokens.secondarySurface,
-                            borderRadius: BorderRadius.circular(AppRadii.card),
+                          const SizedBox(height: 12),
+                          _LiquidFontSizeSegmentedControl(value: fontSize),
+                          const SizedBox(height: 16),
+                          FrostedGlass(
+                            borderRadius: AppRadii.card,
+                            sigma: 12,
+                            color: Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? tokens.surface.withValues(alpha: 0.36)
+                                : Colors.white.withValues(alpha: 0.45),
+                            borderColor: Colors.white.withValues(alpha: 0.24),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                AppStrings.previewText,
+                                style: textTheme.bodyLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ),
-                          child: Text(
-                            AppStrings.previewText,
-                            style: textTheme.bodyLarge,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            3 => const SizedBox(height: 32),
-            4 => _SectionHeading(label: AppStrings.dataManagement),
-            5 => const SizedBox(height: 8),
-            6 => SectionCard(
+          ),
+          const SizedBox(height: 32),
+          LaunchFade(
+            delay: const Duration(milliseconds: AppMotion.sectionStaggerMs * 2),
+            translateY: 12,
+            child: _SectionHeading(label: AppStrings.dataManagement),
+          ),
+          const SizedBox(height: 8),
+          LaunchFade(
+            delay: const Duration(milliseconds: AppMotion.sectionStaggerMs * 3),
+            translateY: 20,
+            child: _SettingsSectionCard(
               child: Column(
                 children: [
                   _SettingsActionRow(
@@ -167,18 +195,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
-            7 => const SizedBox(height: 32),
-            _ => Center(
-              child: Text(
-                AppStrings.aboutVersion,
-                style: textTheme.bodySmall?.copyWith(
-                  color: tokens.mutedText.withValues(alpha: 0.6),
-                ),
+          ),
+          const SizedBox(height: 32),
+          Center(
+            child: Text(
+              AppStrings.aboutVersion,
+              style: textTheme.bodySmall?.copyWith(
+                color: tokens.mutedText.withValues(alpha: 0.6),
               ),
             ),
-          };
-          return RepaintBoundary(child: item);
-        },
+          ),
+        ],
       ),
     );
   }
@@ -335,37 +362,89 @@ class _SectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final glow = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.20)
+        : tokens.primary.withValues(alpha: 0.20);
     return Text(
       label,
       style: Theme.of(
         context,
-      ).textTheme.titleLarge?.copyWith(color: context.tokens.textPrimary),
+      ).textTheme.labelSmall?.copyWith(
+        color: tokens.textSecondary,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 0.5,
+        shadows: [
+          Shadow(color: glow, offset: const Offset(0, 1), blurRadius: 4),
+        ],
+      ),
     );
   }
 }
 
-class _ThemeModeRow extends ConsumerWidget {
-  const _ThemeModeRow({
+class _SettingsSectionCard extends StatelessWidget {
+  const _SettingsSectionCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return FrostedGlass(
+      borderRadius: AppRadii.card,
+      sigma: 20,
+      color: isDark
+          ? tokens.surface.withValues(alpha: 0.45)
+          : Colors.white.withValues(alpha: 0.55),
+      borderColor: Colors.white.withValues(alpha: isDark ? 0.15 : 0.40),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.10),
+          offset: const Offset(0, 10),
+          blurRadius: 20,
+          spreadRadius: -8,
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          offset: const Offset(0, 4),
+          blurRadius: 8,
+          spreadRadius: -5,
+        ),
+      ],
+      child: child,
+    );
+  }
+}
+
+class _LiquidThemeModeRow extends ConsumerWidget {
+  const _LiquidThemeModeRow({
     required this.title,
     required this.subtitle,
     required this.value,
     required this.selectedValue,
+    required this.delay,
   });
 
   final String title;
   final String subtitle;
   final ThemeMode value;
   final ThemeMode selectedValue;
+  final int delay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = value == selectedValue;
-    return _SettingsActionRow(
-      icon: selected ? AppIcons.check : AppIcons.circle,
-      title: title,
-      subtitle: subtitle,
-      selected: selected,
-      onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(value),
+    return LaunchFade(
+      delay: Duration(milliseconds: delay),
+      translateY: 10,
+      child: _SettingsActionRow(
+        icon: selected ? AppIcons.check : AppIcons.circle,
+        title: title,
+        subtitle: subtitle,
+        selected: selected,
+        onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(value),
+      ),
     );
   }
 }
@@ -440,12 +519,9 @@ class _ImportProgressDialog extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                     ] else ...[
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.8, end: 1),
-                        duration: AppRoutes.duration,
-                        curve: AppRoutes.springCurve,
-                        builder: (_, scale, child) =>
-                            Transform.scale(scale: scale, child: child),
+                      SpringScaleIn(
+                        from: 0.8,
+                        spring: AppMotion.calmSpring,
                         child: Icon(AppIcons.check, size: 42, color: color),
                       ),
                       const SizedBox(height: 16),
@@ -493,62 +569,140 @@ class _ImportProgressDialog extends StatelessWidget {
   }
 }
 
-class _FontSizeSegmentedControl extends ConsumerWidget {
-  const _FontSizeSegmentedControl({required this.value});
+class _LiquidFontSizeSegmentedControl extends ConsumerStatefulWidget {
+  const _LiquidFontSizeSegmentedControl({required this.value});
 
   final FontSizePreference value;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LiquidFontSizeSegmentedControl> createState() =>
+      _LiquidFontSizeSegmentedControlState();
+}
+
+class _LiquidFontSizeSegmentedControlState
+    extends ConsumerState<_LiquidFontSizeSegmentedControl>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _indicator;
+  late int _fromIndex;
+  late int _toIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _fromIndex = FontSizePreference.values.indexOf(widget.value);
+    _toIndex = _fromIndex;
+    _indicator = AnimationController.unbounded(vsync: this, value: 1);
+  }
+
+  @override
+  void didUpdateWidget(_LiquidFontSizeSegmentedControl oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _fromIndex = FontSizePreference.values.indexOf(oldWidget.value);
+      _toIndex = FontSizePreference.values.indexOf(widget.value);
+      _indicator.animateWith(
+        SpringSimulation(AppMotion.liquidSpring, 0, 1, 0),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _indicator.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.tokens;
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: tokens.searchSurface,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-      ),
-      child: Row(
-        children: FontSizePreference.values.map((option) {
-          final selected = option == value;
-          return Expanded(
-            child: SpringTap(
-              onTap: () =>
-                  ref.read(fontSizeProvider.notifier).setFontSize(option),
-              child: AnimatedContainer(
-                duration: AppRoutes.duration,
-                curve: AppRoutes.springCurve,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? tokens.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadii.segmented),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return RepaintBoundary(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final options = FontSizePreference.values;
+          final segmentWidth = (constraints.maxWidth - 8) / options.length;
+          return FrostedGlass(
+            borderRadius: AppRadii.card,
+            sigma: 14,
+            color: isDark
+                ? tokens.surface.withValues(alpha: 0.34)
+                : Colors.white.withValues(alpha: 0.42),
+            borderColor: Colors.white.withValues(alpha: isDark ? 0.12 : 0.32),
+            child: SizedBox(
+              height: 48,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Stack(
+                  children: [
+                    AnimatedBuilder(
+                      animation: _indicator,
+                      builder: (context, _) {
+                        final t = _indicator.value.clamp(0.0, 1.0);
+                        final x =
+                            (_fromIndex + ((_toIndex - _fromIndex) * t)) *
+                            segmentWidth;
+                        return Transform.translate(
+                          offset: Offset(x, 0),
+                          child: SizedBox(
+                            width: segmentWidth,
+                            height: 40,
+                            child: FrostedGlass(
+                              borderRadius: AppRadii.segmented,
+                              sigma: 8,
+                              color: isDark
+                                  ? tokens.primary.withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.70),
+                              borderColor: Colors.white.withValues(alpha: 0.18),
+                              child: const SizedBox.expand(),
+                            ),
                           ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  option.label,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: selected ? tokens.primary : tokens.textSecondary,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  ),
+                        );
+                      },
+                    ),
+                    Row(
+                      children: options.map((option) {
+                        final selected = option == widget.value;
+                        return Expanded(
+                          child: SpringTap(
+                            onTap: () => ref
+                                .read(fontSizeProvider.notifier)
+                                .setFontSize(option),
+                            borderRadius: AppRadii.segmented,
+                            child: SizedBox(
+                              height: 40,
+                              child: Center(
+                                child: Text(
+                                  option.label,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelLarge
+                                      ?.copyWith(
+                                        color: selected
+                                            ? tokens.primary
+                                            : tokens.textSecondary,
+                                        fontWeight: selected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
 }
 
-class _SettingsActionRow extends StatelessWidget {
+class _SettingsActionRow extends StatefulWidget {
   const _SettingsActionRow({
     required this.icon,
     required this.title,
@@ -566,53 +720,123 @@ class _SettingsActionRow extends StatelessWidget {
   final bool destructive;
 
   @override
+  State<_SettingsActionRow> createState() => _SettingsActionRowState();
+}
+
+class _SettingsActionRowState extends State<_SettingsActionRow>
+    with TickerProviderStateMixin {
+  late final AnimationController _scale;
+  late final AnimationController _chevron;
+
+  @override
+  void initState() {
+    super.initState();
+    _scale = AnimationController.unbounded(vsync: this, value: 1);
+    _chevron = AnimationController.unbounded(vsync: this, value: 0);
+  }
+
+  @override
+  void dispose() {
+    _scale.dispose();
+    _chevron.dispose();
+    super.dispose();
+  }
+
+  bool get _enabled => widget.onTap != null;
+
+  void _animate(AnimationController controller, double target) {
+    controller.animateWith(
+      SpringSimulation(AppMotion.snappySpring, controller.value, target, 0),
+    );
+  }
+
+  void _pressDown(TapDownDetails _) {
+    if (!_enabled) return;
+    _animate(_scale, AppMotion.buttonPressScale);
+    _animate(_chevron, 1);
+  }
+
+  void _pressUp([Object? _]) {
+    if (!_enabled) return;
+    _animate(_scale, 1);
+    _animate(_chevron, 0);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = destructive
+    final tokens = context.tokens;
+    final color = widget.destructive
         ? context.tokens.destructive
-        : selected
+        : widget.selected
         ? context.tokens.primary
         : context.tokens.textSecondary;
 
-    return SpringTap(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: destructive
-                          ? context.tokens.destructive
-                          : context.tokens.textPrimary,
-                      fontWeight: FontWeight.w500,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: _pressDown,
+      onTapUp: _pressUp,
+      onTapCancel: _pressUp,
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(widget.icon, color: color, size: 24),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: widget.destructive
+                            ? tokens.destructive
+                            : tokens.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: context.tokens.mutedText,
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.mutedText,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(
-              AppIcons.chevronRight,
-              color: destructive
-                  ? context.tokens.destructive
-                  : context.tokens.outline,
-            ),
-          ],
+              _SpringChevron(
+                controller: _chevron,
+                color: widget.destructive ? tokens.destructive : tokens.outline,
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _SpringChevron extends StatelessWidget {
+  const _SpringChevron({required this.controller, required this.color});
+
+  final AnimationController controller;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final t = controller.value.clamp(0.0, 1.0);
+        return Transform.translate(
+          offset: Offset(4 * t, 0),
+          child: Icon(AppIcons.chevronRight, color: color),
+        );
+      },
     );
   }
 }
@@ -622,11 +846,15 @@ class _FigmaDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Divider(
-      height: 1,
-      indent: 16,
-      endIndent: 16,
-      color: context.tokens.border,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        height: 1,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.10)
+            : const Color(0xFFCBC4D2),
+      ),
     );
   }
 }

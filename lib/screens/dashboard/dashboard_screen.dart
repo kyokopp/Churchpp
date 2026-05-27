@@ -272,7 +272,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       tagFilter: ref.watch(tagFilterProvider),
     );
     _scheduleReloadIfNeeded(signature);
-    final textTheme = Theme.of(context).textTheme;
     final tokens = context.tokens;
 
     return PopScope(
@@ -305,19 +304,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           centerTitle: true,
           title: LaunchFade(
             delay: const Duration(milliseconds: 30),
-            child: Text(
-              _selectionMode
+            child: _DashboardTitle(
+              text: _selectionMode
                   ? '${_selectedIds.length} ${AppStrings.selectedSuffix}'
                   : AppStrings.dashboardTitle,
-              style:
-                  (_selectionMode
-                          ? textTheme.titleLarge
-                          : textTheme.headlineLarge)
-                      ?.copyWith(
-                        color: _selectionMode
-                            ? tokens.textPrimary
-                            : tokens.primary,
-                      ),
+              selectionMode: _selectionMode,
             ),
           ),
           actions: _selectionMode
@@ -352,50 +343,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               child: SizedBox(
                 height: 56,
-                child: TextField(
+                child: _LiquidSearchBar(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
                   enabled: !_selectionMode,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: tokens.textPrimary,
-                    height: 1,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: AppStrings.searchHint,
-                    hintStyle: textTheme.bodyLarge?.copyWith(
-                      color: tokens.textSecondary,
-                      height: 1,
-                    ),
-                    filled: true,
-                    fillColor: tokens.searchSurface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
-                    ),
-                    prefixIcon: Icon(
-                      AppIcons.search,
-                      color: tokens.textSecondary,
-                    ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconTap(
-                            onTap: () {
-                              _searchController.clear();
-                              ref.read(searchQueryProvider.notifier).state = '';
-                              setState(() {});
-                            },
-                            child: const SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: Icon(AppIcons.close),
-                            ),
-                          )
-                        : null,
-                  ),
                   onTap: _exitSelectionMode,
+                  showClear: _searchController.text.isNotEmpty,
+                  onClear: () {
+                    _searchController.clear();
+                    ref.read(searchQueryProvider.notifier).state = '';
+                    setState(() {});
+                  },
                   onChanged: (value) {
                     setState(() {});
                     _searchDebouncer.run(() {
@@ -435,17 +393,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
         ),
-        bottomNavigationBar: AnimatedSwitcher(
-          duration: AppRoutes.duration,
-          switchInCurve: AppRoutes.springCurve,
-          switchOutCurve: AppRoutes.springCurve,
-          transitionBuilder: (child, animation) => SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
+        bottomNavigationBar: SpringSwitcher(
+          spring: AppMotion.softSpring,
           child: _selectionMode
               ? _SelectionActionBar(
                   key: const ValueKey('selection-actions'),
@@ -461,6 +410,200 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+}
+
+class _DashboardTitle extends StatelessWidget {
+  const _DashboardTitle({required this.text, required this.selectionMode});
+
+  final String text;
+  final bool selectionMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final style = selectionMode
+        ? Theme.of(context).textTheme.titleLarge
+        : Theme.of(context).textTheme.headlineLarge;
+    return Text(
+      text,
+      style: style?.copyWith(
+        color: selectionMode ? tokens.textPrimary : tokens.primary,
+        shadows: selectionMode
+            ? null
+            : [
+                Shadow(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.20)
+                      : tokens.primary.withValues(alpha: 0.15),
+                  offset: const Offset(0, 1),
+                  blurRadius: isDark ? 8 : 6,
+                ),
+              ],
+      ),
+    );
+  }
+}
+
+class SearchGlassFocus {
+  const SearchGlassFocus._();
+
+  static const focusedScale = 1.02;
+}
+
+class _LiquidSearchBar extends StatefulWidget {
+  const _LiquidSearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.enabled,
+    required this.showClear,
+    required this.onTap,
+    required this.onClear,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool enabled;
+  final bool showClear;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_LiquidSearchBar> createState() => _LiquidSearchBarState();
+}
+
+class _LiquidSearchBarState extends State<_LiquidSearchBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _focus;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus = AnimationController.unbounded(
+      vsync: this,
+      value: widget.focusNode.hasFocus ? 1 : 0,
+    );
+    widget.focusNode.addListener(_handleFocusChanged);
+  }
+
+  @override
+  void didUpdateWidget(_LiquidSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_handleFocusChanged);
+      widget.focusNode.addListener(_handleFocusChanged);
+      _handleFocusChanged();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_handleFocusChanged);
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChanged() {
+    _focus.animateWith(
+      SpringSimulation(
+        AppMotion.liquidSpring,
+        _focus.value,
+        widget.focusNode.hasFocus ? 1 : 0,
+        0,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTheme = Theme.of(context).textTheme;
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _focus,
+        builder: (context, _) {
+          final t = _focus.value.clamp(0.0, 1.0);
+          final scale =
+              1 + ((SearchGlassFocus.focusedScale - 1) * t);
+          final color = isDark
+              ? tokens.surface.withValues(alpha: 0.45 + (0.10 * t))
+              : Colors.white.withValues(alpha: 0.55 + (0.10 * t));
+          final borderAlpha = isDark ? 0.12 + (0.16 * t) : 0.35 + (0.15 * t);
+          return Transform.scale(
+            scale: scale,
+            child: FrostedGlass(
+              borderRadius: AppRadii.pill,
+              sigma: 18,
+              color: color,
+              borderColor: Colors.white.withValues(alpha: borderAlpha),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08 + (0.02 * t)),
+                  offset: const Offset(0, 8),
+                  blurRadius: 18,
+                  spreadRadius: -8,
+                ),
+              ],
+              child: TextField(
+                controller: widget.controller,
+                focusNode: widget.focusNode,
+                enabled: widget.enabled,
+                style: textTheme.bodyLarge?.copyWith(
+                  color: tokens.textPrimary,
+                  height: 1,
+                ),
+                decoration: InputDecoration(
+                  hintText: AppStrings.searchHint,
+                  hintStyle: textTheme.bodyLarge?.copyWith(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.55)
+                        : AppColors.muted,
+                    height: 1,
+                  ),
+                  filled: false,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  prefixIcon: Icon(
+                    AppIcons.search,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.55)
+                        : AppColors.muted,
+                  ),
+                  suffixIcon: widget.showClear
+                      ? SpringTap(
+                          onTap: widget.onClear,
+                          borderRadius: AppRadii.pill,
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Icon(
+                              AppIcons.close,
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.70)
+                                  : tokens.mutedText,
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+                onTap: widget.onTap,
+                onChanged: widget.onChanged,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

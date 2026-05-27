@@ -153,17 +153,7 @@ class _TrashScreenState extends ConsumerState<TrashScreen> {
             },
           ),
         ),
-        bottomNavigationBar: AnimatedSwitcher(
-          duration: AppRoutes.duration,
-          switchInCurve: AppRoutes.springCurve,
-          switchOutCurve: AppRoutes.springCurve,
-          transitionBuilder: (child, animation) => SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
+        bottomNavigationBar: SpringSwitcher(
           child: _selectionMode
               ? _TrashBulkActionBar(
                   key: const ValueKey('trash-bulk-actions'),

@@ -12,11 +12,11 @@ import '../theme/app_theme.dart';
 class AppSpring {
   const AppSpring._();
 
-  static const double stiffness = 400;
-  static const double damping = 28;
+  static const double stiffness = 380;
+  static const double damping = 26;
   static const double mass = 1;
 
-  static const description = AppMotion.liquidSpring;
+  static const description = AppMotion.defaultSpring;
 
   static const Curve curve = SpringTimingCurve(
     stiffness: stiffness,
@@ -26,7 +26,7 @@ class AppSpring {
 
   /// Curve derived from [AppMotion.softSpring] for large element entrances.
   static const Curve softCurve = SpringTimingCurve(
-    stiffness: 200,
+    stiffness: 260,
     damping: 22,
     mass: 1,
   );
@@ -40,8 +40,8 @@ class AppSpring {
 
   /// Curve derived from [AppMotion.listSpring] for card entrances.
   static const Curve listCurve = SpringTimingCurve(
-    stiffness: 280,
-    damping: 24,
+    stiffness: 260,
+    damping: 22,
     mass: 1,
   );
 
@@ -176,6 +176,103 @@ class _SpringScaleInState extends State<SpringScaleIn>
 }
 
 // ── Transition-aware duration constant ─────────────────────────────
+
+class SpringSwitcher extends StatefulWidget {
+  const SpringSwitcher({
+    super.key,
+    required this.child,
+    this.offset = 18,
+    this.spring = AppMotion.defaultSpring,
+  });
+
+  final Widget child;
+  final double offset;
+  final SpringDescription spring;
+
+  @override
+  State<SpringSwitcher> createState() => _SpringSwitcherState();
+}
+
+class _SpringSwitcherState extends State<SpringSwitcher>
+    with TickerProviderStateMixin {
+  late Widget _current;
+  Widget? _previous;
+  late final AnimationController _incoming;
+  late final AnimationController _outgoing;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.child;
+    _incoming = AnimationController.unbounded(vsync: this, value: 1);
+    _outgoing = AnimationController.unbounded(vsync: this, value: 0);
+  }
+
+  @override
+  void didUpdateWidget(SpringSwitcher oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.child.key == widget.child.key) {
+      _current = widget.child;
+      return;
+    }
+    _previous = _current;
+    _current = widget.child;
+    _incoming.animateWith(SpringSimulation(widget.spring, 0, 1, 0));
+    _outgoing.animateWith(SpringSimulation(widget.spring, 1, 0, 0));
+  }
+
+  @override
+  void dispose() {
+    _incoming.dispose();
+    _outgoing.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          if (_previous != null)
+            AnimatedBuilder(
+              animation: _outgoing,
+              builder: (context, child) {
+                final t = _outgoing.value.clamp(0.0, 1.0);
+                if (t == 0) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _previous = null);
+                  });
+                }
+                return Opacity(
+                  opacity: t,
+                  child: Transform.translate(
+                    offset: Offset(0, widget.offset * (1 - t)),
+                    child: child,
+                  ),
+                );
+              },
+              child: _previous,
+            ),
+          AnimatedBuilder(
+            animation: _incoming,
+            builder: (context, child) {
+              final t = _incoming.value.clamp(0.0, 1.0);
+              return Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(0, widget.offset * (1 - t)),
+                  child: child,
+                ),
+              );
+            },
+            child: _current,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class AppRoutesDuration {
   const AppRoutesDuration._();
@@ -381,10 +478,10 @@ class IconTap extends StatefulWidget {
     this.borderRadius = AppRadii.pill,
   });
 
-  static const double pressedScale = AppMotion.iconPressScale; // 0.82
+  static const double pressedScale = AppMotion.iconPressScale; // 0.96
   static const opacityPulseDuration = Duration(milliseconds: 180);
   static const spring =
-      SpringDescription(mass: 1, stiffness: 500, damping: 22);
+      SpringDescription(mass: 1, stiffness: 500, damping: 30);
 
   final Widget child;
   final VoidCallback? onTap;

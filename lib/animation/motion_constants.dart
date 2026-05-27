@@ -25,15 +25,15 @@ class AppMotion {
   // ── Soft spring ── large elements entering / leaving the screen
   static const softSpring = SpringDescription(
     mass: 1.0,
-    stiffness: 200,
+    stiffness: 260,
     damping: 22,
   );
 
   // ── List spring ── card entrance stagger animations
   static const listSpring = SpringDescription(
     mass: 1.0,
-    stiffness: 280,
-    damping: 24,
+    stiffness: 260,
+    damping: 22,
   );
 
   // ── Liquid spring ── flowing indicator glides, tab switching
@@ -64,7 +64,7 @@ class AppMotion {
 
   // ── Scale targets ──
   static const double buttonPressScale = 0.96;
-  static const double iconPressScale = 0.82;
+  static const double iconPressScale = 0.96;
   static const double cardPressScale = 0.96;
   static const double fabPulseMin = 0.92;
   static const double fabPulseMax = 1.08;

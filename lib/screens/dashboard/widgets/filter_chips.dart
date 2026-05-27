@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../animation/motion_constants.dart';
 import '../../../l10n/app_strings.dart';
 import '../../../models/sermon.dart';
 import '../../../providers/sermon_providers.dart';
@@ -78,7 +80,7 @@ class FilterChipsRow extends ConsumerWidget {
   }
 }
 
-class _FigmaFilterChip extends StatelessWidget {
+class _FigmaFilterChip extends StatefulWidget {
   const _FigmaFilterChip({
     required this.selected,
     required this.label,
@@ -92,38 +94,82 @@ class _FigmaFilterChip extends StatelessWidget {
   final IconData? icon;
 
   @override
+  State<_FigmaFilterChip> createState() => _FigmaFilterChipState();
+}
+
+class _FigmaFilterChipState extends State<_FigmaFilterChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fill;
+
+  @override
+  void initState() {
+    super.initState();
+    _fill = AnimationController.unbounded(
+      vsync: this,
+      value: widget.selected ? 1 : 0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_FigmaFilterChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) {
+      _fill.animateWith(
+        SpringSimulation(
+          AppMotion.liquidSpring,
+          _fill.value,
+          widget.selected ? 1 : 0,
+          0,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _fill.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     return SpringTap(
-      onTap: onTap,
+      onTap: widget.onTap,
       borderRadius: AppRadii.card,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        curve: AppSpring.curve,
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: selected ? tokens.selectedSurface : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadii.card),
-          border: Border.all(
-            color: selected ? Colors.transparent : tokens.outline,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: tokens.textSecondary),
-              const SizedBox(width: 8),
-            ],
-            DefaultTextStyle.merge(
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: selected ? tokens.mutedText : tokens.textSecondary,
-              ),
-              child: label,
+      child: AnimatedBuilder(
+        animation: _fill,
+        builder: (context, _) {
+          final t = _fill.value.clamp(0.0, 1.0);
+          final fill = tokens.selectedSurface.withValues(alpha: t);
+          final border = tokens.outline.withValues(alpha: 1 - t);
+          final textColor =
+              Color.lerp(tokens.textSecondary, tokens.mutedText, t)!;
+          return Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              border: Border.all(color: border),
             ),
-          ],
-        ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.icon != null) ...[
+                  Icon(widget.icon, size: 16, color: tokens.textSecondary),
+                  const SizedBox(width: 8),
+                ],
+                DefaultTextStyle.merge(
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(color: textColor),
+                  child: widget.label,
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

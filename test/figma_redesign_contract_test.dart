@@ -39,8 +39,8 @@ void main() {
     () {
       expect(AppRoutes.duration, const Duration(milliseconds: 220));
       expect(AppRoutes.springCurve, isNot(Curves.easeInOutCubic));
-      expect(AppSpring.stiffness, 400);
-      expect(AppSpring.damping, 28);
+      expect(AppSpring.stiffness, 380);
+      expect(AppSpring.damping, 26);
       expect(AppSpring.mass, 1);
     },
   );
@@ -135,19 +135,41 @@ void main() {
     final dark = AppTheme.darkTheme();
     expect(dark.brightness, Brightness.dark);
     expect(AppTheme.gradientFor(Brightness.light).colors, const [
-      Color(0xFFF0EAFF),
-      Color(0xFFE8F4FF),
-      Color(0xFFFFF8F0),
+      Color(0xFFF3EEFF),
+      Color(0xFFFFF4EC),
+      Color(0xFFFDFBFF),
     ]);
     expect(AppTheme.gradientFor(Brightness.dark).colors.length, 3);
   });
 
   test('icon tap micro animation constants are centralized', () {
-    expect(IconTap.pressedScale, 0.82);
+    expect(IconTap.pressedScale, 0.96);
     expect(IconTap.opacityPulseDuration, const Duration(milliseconds: 180));
     expect(IconTap.spring.stiffness, 500);
-    expect(IconTap.spring.damping, 22);
+    expect(IconTap.spring.damping, 30);
     expect(IconTap.spring.mass, 1);
+  });
+
+  test('settings screen uses liquid glass panels and staggered entry', () {
+    final source = File('lib/screens/settings/settings_screen.dart').readAsStringSync();
+    expect(source, contains('FrostedGlass('));
+    expect(source, contains('_SettingsSectionCard'));
+    expect(source, contains('LaunchFade('));
+    expect(source, contains('AppMotion.sectionStaggerMs'));
+    expect(source, contains('_SpringChevron'));
+    expect(source, contains('_LiquidFontSizeSegmentedControl'));
+    expect(source, contains('_LiquidThemeModeRow'));
+    expect(source, isNot(contains('=> SectionCard(')));
+    expect(source, isNot(contains('AnimatedContainer(')));
+  });
+
+  test('dashboard title and search use liquid glass treatment', () {
+    final source = File('lib/screens/dashboard/dashboard_screen.dart').readAsStringSync();
+    expect(source, contains('_DashboardTitle'));
+    expect(source, contains('_LiquidSearchBar'));
+    expect(source, contains('FrostedGlass('));
+    expect(source, contains('SearchGlassFocus'));
+    expect(source, isNot(contains('fillColor: tokens.searchSurface')));
   });
 
   test('Inter is bundled as a local font asset', () {
