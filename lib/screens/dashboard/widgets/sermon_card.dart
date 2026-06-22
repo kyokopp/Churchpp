@@ -301,6 +301,16 @@ class _SearchMatchChip extends StatelessWidget {
         isDark ? const Color(0xFFE8E8E8) : const Color(0xFF6C2244),
         AppStrings.dateMatch,
       ),
+      SermonSearchMatch.tag => (
+        isDark ? const Color(0xFF2F4332) : const Color(0xFFDDF2DF),
+        isDark ? const Color(0xFFE8E8E8) : const Color(0xFF22512A),
+        AppStrings.tagMatch,
+      ),
+      SermonSearchMatch.status => (
+        isDark ? const Color(0xFF30384F) : const Color(0xFFDDE7FF),
+        isDark ? const Color(0xFFE8E8E8) : const Color(0xFF24365E),
+        AppStrings.statusMatch,
+      ),
     };
 
     return Container(

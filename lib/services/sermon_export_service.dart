@@ -9,7 +9,15 @@ import '../models/sermon.dart';
 class SermonExportService {
   const SermonExportService._();
 
-  static const headers = ['ID', 'Tema', 'Data', 'Texto', 'Conteúdo Principal'];
+  static const headers = [
+    'ID',
+    'Tema',
+    'Data',
+    'Texto',
+    'Conteúdo Principal',
+    'Status',
+    'Tags',
+  ];
 
   static String defaultFileName([DateTime? now]) {
     final date = DateFormat('dd-MM-yyyy').format(now ?? DateTime.now());
@@ -38,6 +46,8 @@ class SermonExportService {
         ),
         TextCellValue(sermon.texto?.trim() ?? ''),
         TextCellValue(bodyJsonToPlainText(sermon.bodyJson)),
+        TextCellValue(sermon.status.label),
+        TextCellValue(sermon.tags.map((tag) => tag.trim()).join(',')),
       ]);
     }
 

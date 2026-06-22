@@ -241,6 +241,74 @@ void main() {
     },
   );
 
+  test('search matches partial sermon tags case-insensitively', () async {
+    final db = await databaseFactoryMemory.openDatabase('tag-search-test');
+    final repo = SermonRepository(db);
+    await repo.ensureMigrations();
+
+    await repo.createAndSaveSermon(
+      Sermon(
+        sermonId: 1,
+        title: 'Pastor e cuidado',
+        tags: const ['Psalm23', 'Comfort'],
+      ),
+    );
+    await repo.createAndSaveSermon(
+      Sermon(sermonId: 2, title: 'Outro tema', tags: const ['Missões']),
+    );
+
+    final page = await repo.getFilteredPage(
+      limit: 25,
+      offset: 0,
+      query: ' comf ',
+    );
+
+    expect(page, hasLength(1));
+    expect(page.single.sermon.sermonId, 1);
+    expect(page.single.matches, contains(SermonSearchMatch.tag));
+    await db.close();
+  });
+
+  test(
+    'search matches partial live status labels case-insensitively',
+    () async {
+      final db = await databaseFactoryMemory.openDatabase('status-search-test');
+      final repo = SermonRepository(db);
+      await repo.ensureMigrations();
+
+      await repo.createAndSaveSermon(
+        Sermon(sermonId: 1, title: 'Rascunho salvo'),
+      );
+      await repo.createAndSaveSermon(
+        Sermon(sermonId: 2, title: 'Sermão pronto', status: SermonStatus.ready),
+      );
+      await repo.createAndSaveSermon(
+        Sermon(
+          sermonId: 3,
+          title: 'Sermão pregado',
+          status: SermonStatus.delivered,
+        ),
+      );
+
+      final readyPage = await repo.getFilteredPage(
+        limit: 25,
+        offset: 0,
+        query: 'PRON',
+      );
+      final deliveredPage = await repo.getFilteredPage(
+        limit: 25,
+        offset: 0,
+        query: 'preg',
+      );
+
+      expect(readyPage.map((result) => result.sermon.sermonId), [2]);
+      expect(readyPage.single.matches, contains(SermonSearchMatch.status));
+      expect(deliveredPage.map((result) => result.sermon.sermonId), [3]);
+      expect(deliveredPage.single.matches, contains(SermonSearchMatch.status));
+      await db.close();
+    },
+  );
+
   test('bulk actions update selected sermons together', () async {
     final db = await databaseFactoryMemory.openDatabase('bulk-actions-test');
     final repo = SermonRepository(db);

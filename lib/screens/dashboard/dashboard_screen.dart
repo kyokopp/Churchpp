@@ -529,8 +529,7 @@ class _LiquidSearchBarState extends State<_LiquidSearchBar>
         animation: _focus,
         builder: (context, _) {
           final t = _focus.value.clamp(0.0, 1.0);
-          final scale =
-              1 + ((SearchGlassFocus.focusedScale - 1) * t);
+          final scale = 1 + ((SearchGlassFocus.focusedScale - 1) * t);
           final color = isDark
               ? tokens.surface.withValues(alpha: 0.45 + (0.10 * t))
               : Colors.white.withValues(alpha: 0.55 + (0.10 * t));
@@ -972,7 +971,7 @@ class _ArchivedSermonCard extends ConsumerWidget {
               AppStrings.restore,
               style: TextStyle(
                 color: colorScheme.primary,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -1118,7 +1117,12 @@ class _DockFabState extends State<_DockFab>
 
   void _onTapDown(TapDownDetails _) {
     _pulse.animateWith(
-      SpringSimulation(AppMotion.snappySpring, _pulse.value, AppMotion.fabPulseMin, 0),
+      SpringSimulation(
+        AppMotion.snappySpring,
+        _pulse.value,
+        AppMotion.fabPulseMin,
+        0,
+      ),
     );
   }
 
@@ -1237,8 +1241,11 @@ class _BottomActionState extends State<_BottomAction>
             animation: _indicator,
             builder: (context, _) {
               final t = _indicator.value.clamp(0.0, 1.0);
-              final iconColor =
-                  Color.lerp(tokens.textSecondary, tokens.primary, t)!;
+              final iconColor = Color.lerp(
+                tokens.textSecondary,
+                tokens.primary,
+                t,
+              )!;
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1261,8 +1268,7 @@ class _BottomActionState extends State<_BottomAction>
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: iconColor,
-                      fontWeight:
-                          t > 0.5 ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: t > 0.5 ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                 ],

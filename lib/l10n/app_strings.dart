@@ -99,6 +99,8 @@ class AppStrings {
   static const titleMatch = 'Tema';
   static const textoMatch = 'Texto';
   static const dateMatch = 'Data';
+  static const tagMatch = 'Tag';
+  static const statusMatch = 'Status';
 
   static const importReadingFile = 'Lendo arquivo...';
   static const importProcessingRows = 'Processando linhas...';

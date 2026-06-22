@@ -184,7 +184,7 @@ class _ArchivedCard extends StatelessWidget {
                             : sermon.title,
                         style: textTheme.titleMedium?.copyWith(
                           color: tokens.textPrimary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

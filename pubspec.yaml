@@ -47,6 +47,9 @@ flutter:
     - assets/bible/
 
   fonts:
-    - family: Inter
+    - family: SF Pro Display
       fonts:
-        - asset: assets/fonts/Inter-VariableFont_opsz,wght.ttf
+        - asset: fonts/SF-Pro-Display-Medium.otf
+          weight: 500
+        - asset: fonts/SF-Pro-Display-Bold.otf
+          weight: 700

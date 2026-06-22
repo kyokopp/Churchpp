@@ -23,14 +23,16 @@ void main() {
     expect(AppSpacing.floatingDockBottomGap, 16);
   });
 
-  test('Figma typography uses Inter roles from the design plan', () {
+  test('typography uses SF Pro Display with bundled font weights', () {
     final theme = AppTheme.lightTheme();
-    expect(theme.textTheme.headlineLarge?.fontFamily, 'Inter');
+    expect(theme.textTheme.headlineLarge?.fontFamily, 'SF Pro Display');
     expect(theme.textTheme.headlineLarge?.fontSize, 28);
+    expect(theme.textTheme.headlineLarge?.fontWeight, FontWeight.w700);
     expect(theme.textTheme.headlineLarge?.height, closeTo(36 / 28, 0.001));
     expect(theme.textTheme.displaySmall?.fontSize, 42);
     expect(theme.textTheme.displaySmall?.height, closeTo(52 / 42, 0.001));
     expect(theme.textTheme.bodyLarge?.fontSize, 18);
+    expect(theme.textTheme.bodyLarge?.fontWeight, FontWeight.w500);
     expect(theme.textTheme.bodyLarge?.height, closeTo(29.25 / 18, 0.001));
   });
 
@@ -84,7 +86,8 @@ void main() {
 
   test('route helpers release covered screen state after transitions', () {
     final route =
-        AppRoutes.slideFromRight<void>(const SizedBox.shrink()) as PageRoute<void>;
+        AppRoutes.slideFromRight<void>(const SizedBox.shrink())
+            as PageRoute<void>;
     expect(route.maintainState, false);
   });
 
@@ -124,7 +127,9 @@ void main() {
   });
 
   test('editor toolbar keeps Quill controls in dock-style frosted glass', () {
-    final source = File('lib/screens/editor/editor_screen.dart').readAsStringSync();
+    final source = File(
+      'lib/screens/editor/editor_screen.dart',
+    ).readAsStringSync();
     expect(source, contains('FrostedGlass('));
     expect(source, contains('AppSpacing.floatingDockHeight'));
     expect(source, contains('QuillSimpleToolbar('));
@@ -151,7 +156,9 @@ void main() {
   });
 
   test('settings screen uses liquid glass panels and staggered entry', () {
-    final source = File('lib/screens/settings/settings_screen.dart').readAsStringSync();
+    final source = File(
+      'lib/screens/settings/settings_screen.dart',
+    ).readAsStringSync();
     expect(source, contains('FrostedGlass('));
     expect(source, contains('_SettingsSectionCard'));
     expect(source, contains('LaunchFade('));
@@ -164,7 +171,9 @@ void main() {
   });
 
   test('dashboard title and search use liquid glass treatment', () {
-    final source = File('lib/screens/dashboard/dashboard_screen.dart').readAsStringSync();
+    final source = File(
+      'lib/screens/dashboard/dashboard_screen.dart',
+    ).readAsStringSync();
     expect(source, contains('_DashboardTitle'));
     expect(source, contains('_LiquidSearchBar'));
     expect(source, contains('FrostedGlass('));
@@ -172,10 +181,24 @@ void main() {
     expect(source, isNot(contains('fillColor: tokens.searchSurface')));
   });
 
-  test('Inter is bundled as a local font asset', () {
+  test('sermon card renders tag and status search match chips', () {
+    final source = File(
+      'lib/screens/dashboard/widgets/sermon_card.dart',
+    ).readAsStringSync();
+    expect(source, contains('SermonSearchMatch.tag'));
+    expect(source, contains('AppStrings.tagMatch'));
+    expect(source, contains('SermonSearchMatch.status'));
+    expect(source, contains('AppStrings.statusMatch'));
+  });
+
+  test('SF Pro Display is bundled as the local app font asset', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
-    expect(pubspec, contains('family: Inter'));
-    expect(pubspec, contains('assets/fonts/Inter-VariableFont_opsz,wght.ttf'));
+    expect(pubspec, contains('family: SF Pro Display'));
+    expect(pubspec, contains('fonts/SF-Pro-Display-Medium.otf'));
+    expect(pubspec, contains('weight: 500'));
+    expect(pubspec, contains('fonts/SF-Pro-Display-Bold.otf'));
+    expect(pubspec, contains('weight: 700'));
+    expect(pubspec, isNot(contains('family: Inter')));
     expect(pubspec, isNot(contains('google_fonts')));
   });
 }

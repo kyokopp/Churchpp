@@ -108,8 +108,7 @@ class _PulpitScreenState extends ConsumerState<PulpitScreen> {
                             _title.isEmpty ? AppStrings.untitledSermon : _title,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontFamilyFallback: const ['Helvetica'],
+                              fontFamily: 'SF Pro Display',
                               fontSize:
                                   28 *
                                   pulpitScale /
@@ -125,8 +124,8 @@ class _PulpitScreenState extends ConsumerState<PulpitScreen> {
                             _plainText,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontFamilyFallback: const ['Helvetica'],
+                              fontFamily: 'SF Pro Display',
+                              fontWeight: FontWeight.w500,
                               fontSize:
                                   18 *
                                   pulpitScale /

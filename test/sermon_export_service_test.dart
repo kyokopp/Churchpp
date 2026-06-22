@@ -15,6 +15,8 @@ void main() {
           texto: '  João 3:16  ',
           bodyJson:
               '[{"insert":"Primeira linha\\n"},{"insert":"Segunda linha\\n","attributes":{"bold":true}}]',
+          status: SermonStatus.delivered,
+          tags: const ['Psalm23', 'Comfort', 'Sermão Especial'],
         ),
         Sermon(sermonId: 8, title: 'Sem data', bodyJson: null),
       ]);
@@ -26,13 +28,19 @@ void main() {
       expect(_text(sheet, 0, 2), 'Data');
       expect(_text(sheet, 0, 3), 'Texto');
       expect(_text(sheet, 0, 4), 'Conteúdo Principal');
+      expect(_text(sheet, 0, 5), 'Status');
+      expect(_text(sheet, 0, 6), 'Tags');
       expect(_text(sheet, 1, 0), '7');
       expect(_text(sheet, 1, 1), 'Tema exportado');
       expect(_text(sheet, 1, 2), '16/05/2026');
       expect(_text(sheet, 1, 3), 'João 3:16');
       expect(_text(sheet, 1, 4), 'Primeira linha\nSegunda linha');
+      expect(_text(sheet, 1, 5), 'Pregado');
+      expect(_text(sheet, 1, 6), 'Psalm23,Comfort,Sermão Especial');
       expect(_text(sheet, 2, 2), '');
       expect(_text(sheet, 2, 4), '');
+      expect(_text(sheet, 2, 5), 'Rascunho');
+      expect(_text(sheet, 2, 6), '');
     },
   );
 

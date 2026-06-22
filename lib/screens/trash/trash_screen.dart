@@ -316,7 +316,7 @@ class _TrashCard extends StatelessWidget {
               AppStrings.restore,
               style: TextStyle(
                 color: Colors.green.shade700,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -363,7 +363,7 @@ class _TrashCard extends StatelessWidget {
                                   ? AppStrings.untitledSermon
                                   : sermon.title,
                               style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

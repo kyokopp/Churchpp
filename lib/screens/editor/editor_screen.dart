@@ -745,7 +745,12 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                             );
                           },
                           fieldViewBuilder:
-                              (context, controller, focusNode, onFieldSubmitted) {
+                              (
+                                context,
+                                controller,
+                                focusNode,
+                                onFieldSubmitted,
+                              ) {
                                 return TextField(
                                   controller: controller,
                                   focusNode: focusNode,
@@ -852,13 +857,17 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                                     borderRadius: BorderRadius.circular(
                                       AppRadii.pill,
                                     ),
-                                    borderSide: BorderSide(color: tokens.outline),
+                                    borderSide: BorderSide(
+                                      color: tokens.outline,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(
                                       AppRadii.pill,
                                     ),
-                                    borderSide: BorderSide(color: tokens.outline),
+                                    borderSide: BorderSide(
+                                      color: tokens.outline,
+                                    ),
                                   ),
                                   filled: false,
                                   contentPadding: const EdgeInsets.symmetric(
@@ -870,7 +879,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                                   ),
                                 ),
                                 onSubmitted: _addTag,
-                                textCapitalization: TextCapitalization.sentences,
+                                textCapitalization:
+                                    TextCapitalization.sentences,
                               ),
                             ),
                           ],
@@ -896,8 +906,13 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                                           AppRadii.segmented,
                                         ),
                                       ),
-                                      avatar: const Icon(AppIcons.book, size: 16),
-                                      label: Text(scriptureRef.displayReference),
+                                      avatar: const Icon(
+                                        AppIcons.book,
+                                        size: 16,
+                                      ),
+                                      label: Text(
+                                        scriptureRef.displayReference,
+                                      ),
                                       onPressed: () => _showScriptureCard(
                                         context,
                                         scriptureRef,
@@ -970,7 +985,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen>
                   scriptureRef.displayReference,
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: colorScheme.primary,
                   ),
                 ),

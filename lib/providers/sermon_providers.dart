@@ -22,7 +22,7 @@ class DuplicateSermonIdException implements Exception {
   String toString() => 'ID de sermão duplicado: $sermonId';
 }
 
-enum SermonSearchMatch { id, title, texto, date }
+enum SermonSearchMatch { id, title, texto, date, tag, status }
 
 class SermonSearchResult {
   const SermonSearchResult({required this.sermon, required this.matches});
@@ -561,29 +561,12 @@ class SermonRepository {
     if (textoFilter != null && sermon.texto != textoFilter) return null;
     if (tagFilter != null && !sermon.tags.contains(tagFilter)) return null;
 
-    final matches = <SermonSearchMatch>{};
-    if (query.isNotEmpty) {
-      if (sermon.sermonId.toString().contains(query)) {
-        matches.add(SermonSearchMatch.id);
-      }
-      if (normalizeSearchText(sermon.title).contains(query)) {
-        matches.add(SermonSearchMatch.title);
-      }
-      if (normalizeSearchText(sermon.texto ?? '').contains(query)) {
-        matches.add(SermonSearchMatch.texto);
-      }
-      final scheduledDate = sermon.scheduledDate;
-      if (scheduledDate != null) {
-        final formattedDate = dateFormat.format(scheduledDate);
-        final compactDate = DateFormat('dd/MM/yyyy').format(scheduledDate);
-        if (normalizeSearchText(
-          '$formattedDate $compactDate',
-        ).contains(query)) {
-          matches.add(SermonSearchMatch.date);
-        }
-      }
-      if (matches.isEmpty) return null;
-    }
+    final matches = _searchMatchesForSermon(
+      sermon,
+      query: query,
+      dateFormat: dateFormat,
+    );
+    if (query.isNotEmpty && matches.isEmpty) return null;
 
     return SermonSearchResult(sermon: sermon, matches: matches);
   }
@@ -671,28 +654,11 @@ final filteredSermonResultsProvider = FutureProvider<List<SermonSearchResult>>((
         return true;
       })
       .map((sermon) {
-        final matches = <SermonSearchMatch>{};
-        if (query.isNotEmpty) {
-          if (sermon.sermonId.toString().contains(query)) {
-            matches.add(SermonSearchMatch.id);
-          }
-          if (normalizeSearchText(sermon.title).contains(query)) {
-            matches.add(SermonSearchMatch.title);
-          }
-          if (normalizeSearchText(sermon.texto ?? '').contains(query)) {
-            matches.add(SermonSearchMatch.texto);
-          }
-          final scheduledDate = sermon.scheduledDate;
-          if (scheduledDate != null) {
-            final formattedDate = dateFormat.format(scheduledDate);
-            final compactDate = DateFormat('dd/MM/yyyy').format(scheduledDate);
-            if (normalizeSearchText(
-              '$formattedDate $compactDate',
-            ).contains(query)) {
-              matches.add(SermonSearchMatch.date);
-            }
-          }
-        }
+        final matches = _searchMatchesForSermon(
+          sermon,
+          query: query,
+          dateFormat: dateFormat,
+        );
         return SermonSearchResult(sermon: sermon, matches: matches);
       })
       .where((result) {
@@ -700,6 +666,42 @@ final filteredSermonResultsProvider = FutureProvider<List<SermonSearchResult>>((
       })
       .toList();
 });
+
+Set<SermonSearchMatch> _searchMatchesForSermon(
+  Sermon sermon, {
+  required String query,
+  required DateFormat dateFormat,
+}) {
+  final matches = <SermonSearchMatch>{};
+  if (query.isEmpty) return matches;
+
+  if (sermon.sermonId.toString().contains(query)) {
+    matches.add(SermonSearchMatch.id);
+  }
+  if (normalizeSearchText(sermon.title).contains(query)) {
+    matches.add(SermonSearchMatch.title);
+  }
+  if (normalizeSearchText(sermon.texto ?? '').contains(query)) {
+    matches.add(SermonSearchMatch.texto);
+  }
+  if (sermon.tags.any((tag) => normalizeSearchText(tag).contains(query))) {
+    matches.add(SermonSearchMatch.tag);
+  }
+  if (normalizeSearchText(sermon.status.label).contains(query)) {
+    matches.add(SermonSearchMatch.status);
+  }
+
+  final scheduledDate = sermon.scheduledDate;
+  if (scheduledDate != null) {
+    final formattedDate = dateFormat.format(scheduledDate);
+    final compactDate = DateFormat('dd/MM/yyyy').format(scheduledDate);
+    if (normalizeSearchText('$formattedDate $compactDate').contains(query)) {
+      matches.add(SermonSearchMatch.date);
+    }
+  }
+
+  return matches;
+}
 
 final filteredSermonsProvider = FutureProvider<List<Sermon>>((ref) async {
   final results = await ref.watch(filteredSermonResultsProvider.future);

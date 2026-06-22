@@ -111,6 +111,62 @@ void main() {
     await targetDb.close();
   });
 
+  test('imports optional status and tags columns when present', () async {
+    final db = await databaseFactoryMemory.openDatabase(
+      'import-status-tags-test',
+    );
+    final repo = SermonRepository(db);
+    await repo.ensureMigrations();
+
+    final bytes = _workbookBytes([
+      ['ID', 'Tema', 'Data', 'Texto', 'Conteúdo Principal', 'Status', 'Tags'],
+      [
+        1.0,
+        'Com status',
+        null,
+        'João 10',
+        '',
+        '  pReGaDo  ',
+        'Psalm23, Comfort, , Sermão Especial ',
+      ],
+      [2.0, 'Status inválido', null, '', '', 'desconhecido', ''],
+    ]);
+
+    final result = await SermonImportService(repo).importBytes(bytes);
+    final sermons = await repo.getAll();
+
+    expect(result.importedCount, 2);
+    final delivered = sermons.firstWhere((s) => s.sermonId == 1);
+    expect(delivered.status, SermonStatus.delivered);
+    expect(delivered.tags, ['Psalm23', 'Comfort', 'Sermão Especial']);
+
+    final fallback = sermons.firstWhere((s) => s.sermonId == 2);
+    expect(fallback.status, SermonStatus.draft);
+    expect(fallback.tags, isEmpty);
+    await db.close();
+  });
+
+  test('old five-column imports default status and tags safely', () async {
+    final db = await databaseFactoryMemory.openDatabase(
+      'import-backward-compatible-test',
+    );
+    final repo = SermonRepository(db);
+    await repo.ensureMigrations();
+
+    final bytes = _workbookBytes([
+      ['ID', 'Tema', 'Data', 'Texto', 'Conteúdo Principal'],
+      [1.0, 'Formato antigo', null, '', 'Conteúdo'],
+    ]);
+
+    final result = await SermonImportService(repo).importBytes(bytes);
+    final imported = (await repo.getAll()).single;
+
+    expect(result.importedCount, 1);
+    expect(imported.status, SermonStatus.draft);
+    expect(imported.tags, isEmpty);
+    await db.close();
+  });
+
   test(
     'malformed xlsx bytes return an import error instead of throwing',
     () async {
@@ -128,14 +184,14 @@ void main() {
     },
   );
 
-  test('ID-only rows are skipped and never create blank sermons', () async {
+  test('status and tags alone never create blank sermons', () async {
     final db = await databaseFactoryMemory.openDatabase('id-only-import-test');
     final repo = SermonRepository(db);
     await repo.ensureMigrations();
 
     final bytes = _workbookBytes([
-      ['ID', 'Tema', 'Data', 'Texto', 'Conteúdo Principal'],
-      [1.0, '   ', null, ' ', ''],
+      ['ID', 'Tema', 'Data', 'Texto', 'Conteúdo Principal', 'Status', 'Tags'],
+      [null, '   ', null, ' ', '', 'Pregado', 'Tag solta'],
       [2.0, 'Tema válido', null, '', ''],
     ]);
 

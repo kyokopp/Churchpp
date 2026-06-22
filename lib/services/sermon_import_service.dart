@@ -157,6 +157,8 @@ class SermonImportService {
           scheduledDate: row.date,
           texto: row.texto,
           bodyJson: _plainTextToBodyJson(row.bodyText),
+          status: row.status,
+          tags: row.tags,
         );
         final recordId = await _repo.createAndSaveSermon(
           sermon,
@@ -210,7 +212,7 @@ class SermonImportService {
     final result = <List<Data?>>[];
     for (var i = 1; i < rows.length; i++) {
       final row = rows[i];
-      if (!_rowHasAnyValue(row)) {
+      if (!_rowHasOriginalValue(row)) {
         if (result.isNotEmpty) break;
         continue;
       }
@@ -225,6 +227,8 @@ class SermonImportService {
     final date = _parseDate(_cellValue(row, 2));
     final texto = _trimToNull(_parseString(_cellValue(row, 3)));
     final bodyText = _trimToNull(_parseString(_cellValue(row, 4)));
+    final status = _parseStatus(_cellValue(row, 5));
+    final tags = _parseTags(_cellValue(row, 6));
     return _ParsedImportRow(
       rowNumber: rowNumber,
       preferredId: id,
@@ -232,11 +236,18 @@ class SermonImportService {
       date: date,
       texto: texto,
       bodyText: bodyText,
+      status: status,
+      tags: tags,
     );
   }
 
-  bool _rowHasAnyValue(List<Data?> row) {
-    return row.any((cell) => _parseString(cell?.value).trim().isNotEmpty);
+  bool _rowHasOriginalValue(List<Data?> row) {
+    for (var index = 0; index <= 4; index++) {
+      if (_parseString(_cellValue(row, index)).trim().isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   CellValue? _cellValue(List<Data?> row, int index) {
@@ -292,6 +303,26 @@ class SermonImportService {
     return trimmed.isEmpty ? null : trimmed;
   }
 
+  SermonStatus _parseStatus(CellValue? value) {
+    final normalized = _parseString(value).trim().toLowerCase();
+    return switch (normalized) {
+      'pronto' => SermonStatus.ready,
+      'pregado' => SermonStatus.delivered,
+      'rascunho' || '' => SermonStatus.draft,
+      _ => SermonStatus.draft,
+    };
+  }
+
+  List<String> _parseTags(CellValue? value) {
+    final raw = _parseString(value).trim();
+    if (raw.isEmpty) return const [];
+    return raw
+        .split(',')
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList();
+  }
+
   String? _plainTextToBodyJson(String? value) {
     if (value == null || value.trim().isEmpty) return null;
     return jsonEncode([
@@ -308,6 +339,8 @@ class _ParsedImportRow {
     required this.date,
     required this.texto,
     required this.bodyText,
+    required this.status,
+    required this.tags,
   });
 
   final int rowNumber;
@@ -316,8 +349,11 @@ class _ParsedImportRow {
   final DateTime? date;
   final String? texto;
   final String? bodyText;
+  final SermonStatus status;
+  final List<String> tags;
 
   bool get hasMeaningfulContent =>
+      preferredId != null ||
       (title != null && title!.isNotEmpty) ||
       date != null ||
       (texto != null && texto!.isNotEmpty) ||

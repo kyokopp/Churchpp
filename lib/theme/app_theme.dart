@@ -292,8 +292,7 @@ class AppTheme {
       extensions: [tokens],
       textTheme: textTheme,
       scaffoldBackgroundColor: Colors.transparent,
-      fontFamily: 'Inter',
-      fontFamilyFallback: const ['Helvetica'],
+      fontFamily: 'SF Pro Display',
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: AppCupertinoPageTransitionsBuilder(),
@@ -372,7 +371,7 @@ class AppTheme {
       double letterSpacing = 0,
     }) {
       return TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: 'SF Pro Display',
         fontSize: size * fontScale,
         fontWeight: weight,
         height: lineHeight / size,
@@ -383,13 +382,13 @@ class AppTheme {
     return TextTheme(
       displaySmall: style(42, FontWeight.w700, 52),
       headlineLarge: style(28, FontWeight.w700, 36),
-      headlineMedium: style(28, FontWeight.w600, 36),
-      headlineSmall: style(22, FontWeight.w500, 28),
-      titleLarge: style(22, FontWeight.w500, 28),
-      titleMedium: style(18, FontWeight.w400, 26),
-      titleSmall: style(16, FontWeight.w400, 24),
-      bodyLarge: style(18, FontWeight.w400, 29.25),
-      bodyMedium: style(16, FontWeight.w400, 24),
+      headlineMedium: style(28, FontWeight.w700, 36),
+      headlineSmall: style(22, FontWeight.w700, 28),
+      titleLarge: style(22, FontWeight.w700, 28),
+      titleMedium: style(18, FontWeight.w500, 26),
+      titleSmall: style(16, FontWeight.w500, 24),
+      bodyLarge: style(18, FontWeight.w500, 29.25),
+      bodyMedium: style(16, FontWeight.w500, 24),
       bodySmall: style(11, FontWeight.w500, 16, letterSpacing: 0.5),
       labelLarge: style(14, FontWeight.w500, 20, letterSpacing: 0.1),
       labelMedium: style(14, FontWeight.w500, 20, letterSpacing: 0.1),
